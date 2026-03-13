@@ -13,39 +13,48 @@ import {
 } from 'react-native-paper';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RouteProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../navigation/RootNavigator';
-import { getSettings, saveSettings } from '../store/settingsStore';
 import { getTimetables, saveTimetables } from '../store/timetableStore';
-import type { Settings, Timetable } from '../types';
+import type { Timetable } from '../types';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Settings'>;
+  route: RouteProp<RootStackParamList, 'Settings'>;
 };
 
-export default function SettingsScreen({ navigation }: Props) {
-  const [settings, setSettings] = useState<Settings>({
-    timeRangeStart: '07:00',
-    timeRangeEnd: '23:00',
-    showWeekends: false,
-  });
+export default function SettingsScreen({ navigation, route }: Props) {
+  const { timetableId } = route.params;
+
   const [timetables, setTimetables] = useState<Timetable[]>([]);
   const [timeModalVisible, setTimeModalVisible] = useState(false);
   const [editingTimeField, setEditingTimeField] = useState<'start' | 'end'>('start');
   const [tempTime, setTempTime] = useState('');
   const [renameModalVisible, setRenameModalVisible] = useState(false);
-  const [renamingId, setRenamingId] = useState('');
   const [tempName, setTempName] = useState('');
 
   useFocusEffect(
     useCallback(() => {
-      setSettings(getSettings());
       setTimetables(getTimetables());
     }, []),
   );
 
+  const current = timetables.find(tt => tt.id === timetableId);
+  const ttStart = current?.timeRangeStart ?? '07:00';
+  const ttEnd = current?.timeRangeEnd ?? '23:00';
+  const ttShowWeekends = current?.showWeekends ?? false;
+
+  function updateCurrent(patch: Partial<Timetable>) {
+    const updated = timetables.map(tt =>
+      tt.id === timetableId ? { ...tt, ...patch } : tt,
+    );
+    saveTimetables(updated);
+    setTimetables(updated);
+  }
+
   function openTimeModal(field: 'start' | 'end') {
     setEditingTimeField(field);
-    setTempTime(field === 'start' ? settings.timeRangeStart : settings.timeRangeEnd);
+    setTempTime(field === 'start' ? ttStart : ttEnd);
     setTimeModalVisible(true);
   }
 
@@ -55,30 +64,18 @@ export default function SettingsScreen({ navigation }: Props) {
       Alert.alert('형식 오류', 'HH:MM 형식으로 입력해 주세요. (예: 07:00)');
       return;
     }
-    const updated: Settings = {
-      ...settings,
-      ...(editingTimeField === 'start'
-        ? { timeRangeStart: tempTime }
-        : { timeRangeEnd: tempTime }),
-    };
-    if (updated.timeRangeStart >= updated.timeRangeEnd) {
+    const newStart = editingTimeField === 'start' ? tempTime : ttStart;
+    const newEnd = editingTimeField === 'end' ? tempTime : ttEnd;
+    if (newStart >= newEnd) {
       Alert.alert('시간 오류', '종료 시간은 시작 시간보다 늦어야 합니다.');
       return;
     }
-    setSettings(updated);
-    saveSettings(updated);
+    updateCurrent({ timeRangeStart: newStart, timeRangeEnd: newEnd });
     setTimeModalVisible(false);
   }
 
-  function toggleWeekends(value: boolean) {
-    const updated: Settings = { ...settings, showWeekends: value };
-    setSettings(updated);
-    saveSettings(updated);
-  }
-
-  function openRenameModal(tt: Timetable) {
-    setRenamingId(tt.id);
-    setTempName(tt.name);
+  function openRenameModal() {
+    setTempName(current?.name ?? '');
     setRenameModalVisible(true);
   }
 
@@ -88,22 +85,18 @@ export default function SettingsScreen({ navigation }: Props) {
       Alert.alert('알림', '시간표 이름을 입력해 주세요.');
       return;
     }
-    const updated = timetables.map(tt =>
-      tt.id === renamingId ? { ...tt, name: trimmed } : tt,
-    );
-    saveTimetables(updated);
-    setTimetables(updated);
+    updateCurrent({ name: trimmed });
     setRenameModalVisible(false);
   }
 
-  function handleDeleteTimetable(tt: Timetable) {
+  function handleDelete() {
     if (timetables.length <= 1) {
       Alert.alert('알림', '시간표가 1개 이상 있어야 합니다.');
       return;
     }
     Alert.alert(
       '시간표 삭제',
-      `"${tt.name}"을(를) 삭제하시겠습니까?\n포함된 모든 일정도 함께 삭제됩니다.`,
+      `"${current?.name}"을(를) 삭제하시겠습니까?\n포함된 모든 일정도 함께 삭제됩니다.`,
       [
         { text: '취소', style: 'cancel' },
         {
@@ -111,18 +104,39 @@ export default function SettingsScreen({ navigation }: Props) {
           style: 'destructive',
           onPress: () => {
             const updated = timetables
-              .filter(t => t.id !== tt.id)
+              .filter(t => t.id !== timetableId)
               .map((t, i) => ({ ...t, order: i }));
             saveTimetables(updated);
-            setTimetables(updated);
+            navigation.goBack();
           },
         },
       ],
     );
   }
 
+  if (!current) return null;
+
   return (
     <View style={{ flex: 1, backgroundColor: '#f9fafb' }}>
+      {/* 시간표 정보 섹션 */}
+      <List.Section>
+        <List.Subheader style={styles.subheader}>시간표</List.Subheader>
+        <View style={styles.card}>
+          <List.Item
+            title={current.name}
+            description="시간표 이름"
+            right={() => (
+              <IconButton
+                icon="pencil-outline"
+                size={18}
+                iconColor="#3b82f6"
+                onPress={openRenameModal}
+              />
+            )}
+          />
+        </View>
+      </List.Section>
+
       {/* 시간 범위 섹션 */}
       <List.Section>
         <List.Subheader style={styles.subheader}>시간 범위</List.Subheader>
@@ -133,7 +147,7 @@ export default function SettingsScreen({ navigation }: Props) {
             right={() => (
               <View style={styles.timeValue}>
                 <Text variant="titleMedium" style={{ color: '#3b82f6', fontWeight: '600' }}>
-                  {settings.timeRangeStart}
+                  {ttStart}
                 </Text>
               </View>
             )}
@@ -146,7 +160,7 @@ export default function SettingsScreen({ navigation }: Props) {
             right={() => (
               <View style={styles.timeValue}>
                 <Text variant="titleMedium" style={{ color: '#3b82f6', fontWeight: '600' }}>
-                  {settings.timeRangeEnd}
+                  {ttEnd}
                 </Text>
               </View>
             )}
@@ -164,13 +178,26 @@ export default function SettingsScreen({ navigation }: Props) {
             description="토요일 · 일요일 컬럼 표시"
             right={() => (
               <Switch
-                value={settings.showWeekends}
-                onValueChange={toggleWeekends}
+                value={ttShowWeekends}
+                onValueChange={v => updateCurrent({ showWeekends: v })}
               />
             )}
           />
         </View>
       </List.Section>
+
+      {/* 시간표 삭제 */}
+      {timetables.length > 1 && (
+        <List.Section>
+          <View style={styles.card}>
+            <List.Item
+              title="시간표 삭제"
+              titleStyle={{ color: '#ef4444' }}
+              onPress={handleDelete}
+            />
+          </View>
+        </List.Section>
+      )}
 
       {/* 버전 정보 */}
       <List.Section>
@@ -185,6 +212,35 @@ export default function SettingsScreen({ navigation }: Props) {
           />
         </View>
       </List.Section>
+
+      {/* 시간표 이름 변경 모달 */}
+      <Portal>
+        <Modal
+          visible={renameModalVisible}
+          onDismiss={() => setRenameModalVisible(false)}
+          contentContainerStyle={styles.modal}
+        >
+          <Text variant="titleMedium" style={{ marginBottom: 16, fontWeight: '600' }}>
+            시간표 이름 변경
+          </Text>
+          <TextInput
+            label="시간표 이름"
+            mode="outlined"
+            value={tempName}
+            onChangeText={setTempName}
+            autoFocus
+            style={{ backgroundColor: '#fff' }}
+          />
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+            <Button onPress={() => setRenameModalVisible(false)} textColor="#6b7280">
+              취소
+            </Button>
+            <Button mode="contained" onPress={confirmRename}>
+              확인
+            </Button>
+          </View>
+        </Modal>
+      </Portal>
 
       {/* 시간 편집 모달 */}
       <Portal>

@@ -19,8 +19,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { getTimetables, saveTimetables } from '../store/timetableStore';
-import { getSettings } from '../store/settingsStore';
-import type { Timetable, Schedule, Settings } from '../types';
+import type { Timetable, Schedule } from '../types';
 import { timeToMinutes } from '../utils/time';
 
 type Props = {
@@ -29,7 +28,7 @@ type Props = {
 
 const ALL_DAYS = ['월', '화', '수', '목', '금', '토', '일'];
 const TIME_COL_WIDTH = 44;
-const MIN_CELL_HEIGHT = 3; // 10분 = 3dp
+const MIN_CELL_HEIGHT = 2; // 10분 = 2dp
 const HEADER_HEIGHT = 44;
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const ZOOM_DURATION = 250;
@@ -61,11 +60,6 @@ function triggerHaptic() {
 export default function MainScreen({ navigation }: Props) {
   const [timetables, setTimetables] = useState<Timetable[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [settings, setSettings] = useState<Settings>({
-    timeRangeStart: '07:00',
-    timeRangeEnd: '23:00',
-    showWeekends: false,
-  });
   const [zoomedDay, setZoomedDay] = useState<number | null>(null);
   const todayIndex = getTodayIndex();
 
@@ -97,18 +91,19 @@ export default function MainScreen({ navigation }: Props) {
 
   useFocusEffect(
     useCallback(() => {
-      const tt = getTimetables();
-      setTimetables(tt);
-      setSettings(getSettings());
+      setTimetables(getTimetables());
     }, []),
   );
 
   const activeTimetable = timetables[activeIndex];
-  const days = settings.showWeekends ? ALL_DAYS : ALL_DAYS.slice(0, 5);
+  const ttStart = activeTimetable?.timeRangeStart ?? '07:00';
+  const ttEnd = activeTimetable?.timeRangeEnd ?? '23:00';
+  const ttShowWeekends = activeTimetable?.showWeekends ?? false;
+  const days = ttShowWeekends ? ALL_DAYS : ALL_DAYS.slice(0, 5);
   const numDays = days.length;
-  const timeLabels = generateTimeLabels(settings.timeRangeStart, settings.timeRangeEnd);
-  const startMin = timeToMinutes(settings.timeRangeStart);
-  const endMin = timeToMinutes(settings.timeRangeEnd);
+  const timeLabels = generateTimeLabels(ttStart, ttEnd);
+  const startMin = timeToMinutes(ttStart);
+  const endMin = timeToMinutes(ttEnd);
   const gridHeight = (endMin - startMin) * MIN_CELL_HEIGHT;
   const availableWidth = SCREEN_WIDTH - TIME_COL_WIDTH;
 
@@ -260,7 +255,7 @@ export default function MainScreen({ navigation }: Props) {
             </TouchableOpacity>
             <TouchableOpacity
               style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}
-              onPress={() => navigation.navigate('Settings')}
+              onPress={() => navigation.navigate('Settings', { timetableId: activeTimetable?.id ?? '' })}
             >
               <SettingsIcon size={18} color="#6b7280" />
             </TouchableOpacity>

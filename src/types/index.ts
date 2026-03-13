@@ -19,6 +19,9 @@ export interface Timetable {
   name: string;
   order: number;
   schedules: Schedule[];
+  timeRangeStart?: string;  // 기본값: '07:00'
+  timeRangeEnd?: string;    // 기본값: '23:00'
+  showWeekends?: boolean;   // 기본값: false
 }
 
 export interface Settings {

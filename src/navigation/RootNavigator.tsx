@@ -14,7 +14,7 @@ export type RootStackParamList = {
     defaultStartTime?: string;
     defaultEndTime?: string;
   };
-  Settings: undefined;
+  Settings: { timetableId: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
