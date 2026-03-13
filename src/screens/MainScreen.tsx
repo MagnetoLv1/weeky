@@ -300,11 +300,11 @@ export default function MainScreen({ navigation }: Props) {
       } else if (zoomedDay === null) {
         w = normalW;
       } else if (i === zoomedDay) {
-        w = availableWidth * 0.56; // 줌된 요일: 56%
+        w = availableWidth * 0.6; // 줌된 요일: 60%
       } else if (Math.abs(i - zoomedDay) === 1) {
-        w = availableWidth * 0.22; // 인접 요일: 22% (약 30% 노출)
+        w = availableWidth * 0.2; // 인접 요일: 20%
       } else {
-        w = 0; // 비인접 요일: 숨김
+        w = 0; // 나머지 요일: 밀림
       }
       colWs[i].value = withTiming(w, { duration: ZOOM_DURATION });
     }
