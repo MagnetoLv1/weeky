@@ -76,6 +76,51 @@ export default function SettingsScreen({ navigation }: Props) {
     saveSettings(updated);
   }
 
+  function openRenameModal(tt: Timetable) {
+    setRenamingId(tt.id);
+    setTempName(tt.name);
+    setRenameModalVisible(true);
+  }
+
+  function confirmRename() {
+    const trimmed = tempName.trim();
+    if (!trimmed) {
+      Alert.alert('알림', '시간표 이름을 입력해 주세요.');
+      return;
+    }
+    const updated = timetables.map(tt =>
+      tt.id === renamingId ? { ...tt, name: trimmed } : tt,
+    );
+    saveTimetables(updated);
+    setTimetables(updated);
+    setRenameModalVisible(false);
+  }
+
+  function handleDeleteTimetable(tt: Timetable) {
+    if (timetables.length <= 1) {
+      Alert.alert('알림', '시간표가 1개 이상 있어야 합니다.');
+      return;
+    }
+    Alert.alert(
+      '시간표 삭제',
+      `"${tt.name}"을(를) 삭제하시겠습니까?\n포함된 모든 일정도 함께 삭제됩니다.`,
+      [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '삭제',
+          style: 'destructive',
+          onPress: () => {
+            const updated = timetables
+              .filter(t => t.id !== tt.id)
+              .map((t, i) => ({ ...t, order: i }));
+            saveTimetables(updated);
+            setTimetables(updated);
+          },
+        },
+      ],
+    );
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: '#f9fafb' }}>
       {/* 시간 범위 섹션 */}

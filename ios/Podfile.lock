@@ -2119,6 +2119,53 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - RNSVG (15.15.3):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - RNSVG/common (= 15.15.3)
+    - Yoga
+  - RNSVG/common (15.15.3):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
+  - RNVectorIcons (7.1.0):
+    - React
   - RNWorklets (0.7.4):
     - hermes-engine
     - RCTRequired
@@ -2277,6 +2324,8 @@ DEPENDENCIES:
   - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNShare (from `../node_modules/react-native-share`)
+  - RNSVG (from `../node_modules/react-native-svg`)
+  - RNVectorIcons (from `../node_modules/react-native-vector-icons`)
   - RNWorklets (from `../node_modules/react-native-worklets`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
@@ -2452,6 +2501,10 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-screens"
   RNShare:
     :path: "../node_modules/react-native-share"
+  RNSVG:
+    :path: "../node_modules/react-native-svg"
+  RNVectorIcons:
+    :path: "../node_modules/react-native-vector-icons"
   RNWorklets:
     :path: "../node_modules/react-native-worklets"
   Yoga:
@@ -2542,6 +2595,8 @@ SPEC CHECKSUMS:
   RNReanimated: 0cb8806c6ef2b0f6404e1d0f3ce8ac8177984cf5
   RNScreens: 088d923c4327c63c9f8c942cae17a9d038f47d97
   RNShare: ff5af9247238eef4163d0f52cc3b99fdea6e9e8f
+  RNSVG: 13970bfde0ea9c9e10e01ab0d7b4a6cde11fca1b
+  RNVectorIcons: bc69e6a278b14842063605de32bec61f0b251a59
   RNWorklets: 0373848914c7751c4e0ca573ebbe38f489026a62
   Yoga: 0a3b1e85da3524bdc3e0161818c8881ad363f97b
 
