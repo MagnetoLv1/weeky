@@ -259,14 +259,23 @@ export default function MainScreen({ navigation }: Props) {
   const gridHeight = (endMin - startMin) * MIN_CELL_HEIGHT;
   const availableWidth = SCREEN_WIDTH - TIME_COL_WIDTH;
 
-  // 현재 시간 1분마다 갱신
+  // 현재 시간 — 정각 분 단위에 맞춰 업데이트
   useEffect(() => {
+    let intervalId: ReturnType<typeof setInterval>;
     const tick = () => {
       const n = new Date();
       setNowMin(n.getHours() * 60 + n.getMinutes());
     };
-    const id = setInterval(tick, 60_000);
-    return () => clearInterval(id);
+    // 다음 분 정각까지 남은 ms
+    const msToNextMinute = (60 - new Date().getSeconds()) * 1000 - new Date().getMilliseconds();
+    const timeoutId = setTimeout(() => {
+      tick();
+      intervalId = setInterval(tick, 60_000);
+    }, msToNextMinute);
+    return () => {
+      clearTimeout(timeoutId);
+      clearInterval(intervalId);
+    };
   }, []);
 
   // 초기 스크롤: 현재 시간이 화면 중앙에 오도록
@@ -508,18 +517,18 @@ export default function MainScreen({ navigation }: Props) {
                   top: (nowMin - startMin) * MIN_CELL_HEIGHT,
                   left: TIME_COL_WIDTH,
                   right: 0,
-                  height: 1.5,
+                  height: 0.75,
                   backgroundColor: '#EF4444',
                   zIndex: 10,
                 }}
               >
                 <View style={{
                   position: 'absolute',
-                  left: -3,
-                  top: -2.5,
-                  width: 7,
-                  height: 7,
-                  borderRadius: 3.5,
+                  left: -2,
+                  top: -1.75,
+                  width: 4,
+                  height: 4,
+                  borderRadius: 2,
                   backgroundColor: '#EF4444',
                 }} />
               </View>
@@ -534,16 +543,15 @@ export default function MainScreen({ navigation }: Props) {
                   <Text style={{ fontSize: 10, color: '#9ca3af', marginTop: -6 }}>{label}</Text>
                 </View>
               ))}
-              {/* 현재 시간 레이블 */}
+              {/* 현재 분 표시 */}
               {nowMin >= startMin && nowMin <= endMin && (
                 <View style={{
                   position: 'absolute',
-                  top: (nowMin - startMin) * MIN_CELL_HEIGHT - 7,
-                  right: 4,
-                  alignItems: 'flex-end',
+                  top: (nowMin - startMin) * MIN_CELL_HEIGHT - 6,
+                  right: 6,
                 }}>
-                  <Text style={{ fontSize: 9, color: '#EF4444', fontWeight: '700' }}>
-                    {`${String(Math.floor(nowMin / 60)).padStart(2, '0')}:${String(nowMin % 60).padStart(2, '0')}`}
+                  <Text style={{ fontSize: 9, color: '#EF4444', fontWeight: '400' }}>
+                    {String(nowMin % 60).padStart(2, '0')}
                   </Text>
                 </View>
               )}
