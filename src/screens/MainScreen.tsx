@@ -231,13 +231,13 @@ export default function MainScreen({ navigation }: Props) {
   const colW6 = useSharedValue(0);
   const colWs = [colW0, colW1, colW2, colW3, colW4, colW5, colW6];
 
-  const colStyle0 = useAnimatedStyle(() => ({ width: colW0.value, overflow: 'visible' }));
-  const colStyle1 = useAnimatedStyle(() => ({ width: colW1.value, overflow: 'visible' }));
-  const colStyle2 = useAnimatedStyle(() => ({ width: colW2.value, overflow: 'visible' }));
-  const colStyle3 = useAnimatedStyle(() => ({ width: colW3.value, overflow: 'visible' }));
-  const colStyle4 = useAnimatedStyle(() => ({ width: colW4.value, overflow: 'visible' }));
-  const colStyle5 = useAnimatedStyle(() => ({ width: colW5.value, overflow: 'visible' }));
-  const colStyle6 = useAnimatedStyle(() => ({ width: colW6.value, overflow: 'visible' }));
+  const colStyle0 = useAnimatedStyle(() => ({ width: colW0.value }));
+  const colStyle1 = useAnimatedStyle(() => ({ width: colW1.value }));
+  const colStyle2 = useAnimatedStyle(() => ({ width: colW2.value }));
+  const colStyle3 = useAnimatedStyle(() => ({ width: colW3.value }));
+  const colStyle4 = useAnimatedStyle(() => ({ width: colW4.value }));
+  const colStyle5 = useAnimatedStyle(() => ({ width: colW5.value }));
+  const colStyle6 = useAnimatedStyle(() => ({ width: colW6.value }));
   const colStyles = [colStyle0, colStyle1, colStyle2, colStyle3, colStyle4, colStyle5, colStyle6];
 
   const slideStyle = useAnimatedStyle(() => ({
@@ -415,35 +415,35 @@ export default function MainScreen({ navigation }: Props) {
     <View style={{ flex: 1, backgroundColor: 'white' }}>
       {/* 앱 헤더 (고정) */}
       <View style={{ paddingHorizontal: 16, paddingTop: 48, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', minHeight: 40 }}>
           {/* 타이틀 + 스와이프 영역 */}
           <GestureDetector gesture={panGesture}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingVertical: 4, gap: 6 }}>
-              <ChevronLeft size={16} color={activeIndex > 0 ? '#9ca3af' : 'transparent'} />
-              <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827' }}>
-                {activeTimetable?.name ?? '시간표'}
-              </Text>
-              <ChevronRight size={16} color={activeIndex < timetables.length - 1 ? '#9ca3af' : 'transparent'} />
-              {timetables.length > 1 && (
-                <View style={{ flexDirection: 'row', gap: 3, marginLeft: 2 }}>
-                  {timetables.map((_, i) => (
-                    <View
-                      key={i}
-                      style={{
-                        borderRadius: 99,
-                        width: i === activeIndex ? 12 : 6,
-                        height: 6,
-                        backgroundColor: i === activeIndex ? '#3b82f6' : '#d1d5db',
-                      }}
-                    />
-                  ))}
-                </View>
-              )}
+            <View style={{ flex: 1, paddingVertical: 4 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <ChevronLeft size={16} color={activeIndex > 0 ? '#9ca3af' : 'transparent'} />
+                <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827' }}>
+                  {activeTimetable?.name ?? '시간표'}
+                </Text>
+                <ChevronRight size={16} color={activeIndex < timetables.length - 1 ? '#9ca3af' : 'transparent'} />
+              </View>
+              <View style={{ flexDirection: 'row', gap: 3, marginTop: 6, marginLeft: 22, height: 4 }}>
+                {timetables.length > 1 && timetables.map((_, i) => (
+                  <View
+                    key={i}
+                    style={{
+                      borderRadius: 99,
+                      width: i === activeIndex ? 10 : 4,
+                      height: 4,
+                      backgroundColor: i === activeIndex ? '#3b82f6' : '#d1d5db',
+                    }}
+                  />
+                ))}
+              </View>
             </View>
           </GestureDetector>
 
           {/* 버튼 */}
-          <View style={{ flexDirection: 'row', gap: 4 }}>
+          <View style={{ flexDirection: 'row', gap: 4, paddingTop: 2 }}>
             {zoomedDay !== null && (
               <TouchableOpacity
                 style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}
@@ -473,33 +473,38 @@ export default function MainScreen({ navigation }: Props) {
         {/* 요일 헤더 */}
         <View style={{ flexDirection: 'row', height: HEADER_HEIGHT, borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }}>
           <View style={{ width: TIME_COL_WIDTH }} />
-          {ALL_DAYS.map((day, i) => (
-            <Animated.View
-              key={day}
-              style={[colStyles[i], { alignItems: 'center', justifyContent: 'center' }]}
-            >
-              <View
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 16,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: i === todayIndex ? '#3b82f6' : 'transparent',
-                }}
+          {ALL_DAYS.map((day, i) => {
+            const headerVisible = i < numDays && (zoomedDay === null || Math.abs(i - zoomedDay) <= 1);
+            return (
+              <Animated.View
+                key={day}
+                style={[colStyles[i], { alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }]}
               >
-                <Text
-                  style={{
-                    fontSize: 13,
-                    fontWeight: '600',
-                    color: i === todayIndex ? 'white' : '#374151',
-                  }}
-                >
-                  {day}
-                </Text>
-              </View>
-            </Animated.View>
-          ))}
+                {headerVisible && (
+                  <View
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 16,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: i === todayIndex ? '#3b82f6' : 'transparent',
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontWeight: '600',
+                        color: i === todayIndex ? 'white' : '#374151',
+                      }}
+                    >
+                      {day}
+                    </Text>
+                  </View>
+                )}
+              </Animated.View>
+            );
+          })}
         </View>
 
         {/* 시간표 그리드 */}
@@ -600,7 +605,8 @@ export default function MainScreen({ navigation }: Props) {
                 </View>
 
                 {/* 알림 바 — 블록 시작 N분 전 위치에 독립 렌더링 */}
-                {activeTimetable?.schedules
+                {(zoomedDay === null || Math.abs(dayIndex - zoomedDay) <= 1) &&
+                  activeTimetable?.schedules
                   .filter(s => s.dayOfWeek.includes(dayIndex) && s.notification?.enabled)
                   .map(schedule => {
                     const { top } = getBlockStyle(schedule);
@@ -626,7 +632,8 @@ export default function MainScreen({ navigation }: Props) {
                   })}
 
                 {/* 일정 블록 */}
-                {activeTimetable?.schedules
+                {(zoomedDay === null || Math.abs(dayIndex - zoomedDay) <= 1) &&
+                  activeTimetable?.schedules
                   .filter(s => s.dayOfWeek.includes(dayIndex))
                   .map(schedule => {
                     const { top, height } = getBlockStyle(schedule);
