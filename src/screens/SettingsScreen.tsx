@@ -271,7 +271,7 @@ export default function SettingsScreen({ navigation, route }: Props) {
             autoFocus
             style={{ backgroundColor: '#fff' }}
           />
-          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+          <View className="flex-row justify-end gap-2 mt-4">
             <Button onPress={() => setRenameModalVisible(false)} textColor="#6b7280">
               취소
             </Button>

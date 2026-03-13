@@ -174,26 +174,24 @@ function DraggableScheduleBlock({
   return (
     <GestureDetector gesture={composed}>
       <Animated.View
+        className="absolute rounded-[4px] overflow-hidden"
         style={[
           {
-            position: 'absolute',
             top,
             height,
             left: 1,
             right: 1,
             backgroundColor: schedule.color,
-            borderRadius: 4,
-            overflow: 'hidden',
           },
           animStyle,
         ]}
       >
-        <Animated.View style={[{ padding: 4 }, stickyLabelStyle]}>
-          <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: '700', color: '#1f2937' }}>
+        <Animated.View className="p-1" style={stickyLabelStyle}>
+          <Text numberOfLines={1} className="text-[12px] font-bold text-[#1f2937]">
             {schedule.title}
           </Text>
           {schedule.subTitle ? (
-            <Text numberOfLines={1} style={{ fontSize: 9, color: '#4b5563' }}>
+            <Text numberOfLines={1} className="text-[9px] text-[#4b5563]">
               {schedule.subTitle}
             </Text>
           ) : null}
@@ -431,21 +429,21 @@ export default function MainScreen({ navigation, route }: Props) {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: 'white' }}>
+    <View className="flex-1 bg-white">
       {/* 앱 헤더 (고정) */}
-      <View style={{ paddingHorizontal: 16, paddingTop: 48, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' }}>
-        <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', minHeight: 40 }}>
+      <View className="px-4 pt-12 pb-2 border-b border-[#f3f4f6]">
+        <View className="flex-row items-start justify-between min-h-[40px]">
           {/* 타이틀 + 스와이프 영역 */}
           <GestureDetector gesture={panGesture}>
-            <View style={{ flex: 1, paddingVertical: 4 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View className="flex-1 py-1">
+              <View className="flex-row items-center gap-[6px]">
                 <ChevronLeft size={16} color={activeIndex > 0 ? '#9ca3af' : 'transparent'} />
-                <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827' }}>
+                <Text className="text-[18px] font-bold text-[#111827]">
                   {activeTimetable?.name ?? '시간표'}
                 </Text>
                 <ChevronRight size={16} color={activeIndex < timetables.length - 1 ? '#9ca3af' : 'transparent'} />
               </View>
-              <View style={{ flexDirection: 'row', gap: 3, marginTop: 6, marginLeft: 22, height: 4 }}>
+              <View className="flex-row gap-[3px] mt-[6px] ml-[22px] h-1">
                 {timetables.length > 1 && timetables.map((_, i) => (
                   <View
                     key={i}
@@ -462,23 +460,23 @@ export default function MainScreen({ navigation, route }: Props) {
           </GestureDetector>
 
           {/* 버튼 */}
-          <View style={{ flexDirection: 'row', gap: 4, paddingTop: 2 }}>
+          <View className="flex-row gap-1 pt-[2px]">
             {zoomedDay !== null && (
               <TouchableOpacity
-                style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}
+                className="w-8 h-8 items-center justify-center"
                 onPress={() => setZoomedDay(null)}
               >
-                <Text style={{ fontSize: 12, color: '#6b7280' }}>전체</Text>
+                <Text className="text-[12px] text-[#6b7280]">전체</Text>
               </TouchableOpacity>
             )}
             <TouchableOpacity
-              style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}
+              className="w-8 h-8 items-center justify-center"
               onPress={handleAddTimetable}
             >
               <Plus size={20} color="#9ca3af" />
             </TouchableOpacity>
             <TouchableOpacity
-              style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}
+              className="w-8 h-8 items-center justify-center"
               onPress={() => navigation.navigate('Settings', { timetableId: activeTimetable?.id ?? '' })}
             >
               <SettingsIcon size={18} color="#6b7280" />
@@ -488,34 +486,28 @@ export default function MainScreen({ navigation, route }: Props) {
       </View>
 
       {/* 요일 헤더 + 시간표 그리드 (슬라이드 대상) */}
-      <Animated.View style={[{ flex: 1 }, slideStyle]}>
+      <Animated.View className="flex-1" style={slideStyle}>
         {/* 요일 헤더 */}
-        <View style={{ flexDirection: 'row', height: HEADER_HEIGHT, borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }}>
-          <View style={{ width: TIME_COL_WIDTH }} />
+        <View className="flex-row border-b border-[#e5e7eb] h-[44px]">
+          <View className="w-[58px]" />
           {ALL_DAYS.map((day, i) => {
             const headerVisible = i < numDays && (zoomedDay === null || Math.abs(i - zoomedDay) <= 1);
             return (
               <Animated.View
                 key={day}
-                style={[colStyles[i], { alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }]}
+                className="items-center justify-center overflow-hidden"
+                style={colStyles[i]}
               >
                 {headerVisible && (
                   <View
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: 16,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: i === todayIndex ? '#3b82f6' : 'transparent',
-                    }}
+                    className={`w-8 h-8 rounded-full items-center justify-center ${
+                      i === todayIndex ? 'bg-blue-500' : 'bg-transparent'
+                    }`}
                   >
                     <Text
-                      style={{
-                        fontSize: 13,
-                        fontWeight: '600',
-                        color: i === todayIndex ? 'white' : '#374151',
-                      }}
+                      className={`text-[13px] font-semibold ${
+                        i === todayIndex ? 'text-white' : 'text-[#374151]'
+                      }`}
                     >
                       {day}
                     </Text>
@@ -534,7 +526,7 @@ export default function MainScreen({ navigation, route }: Props) {
           onScroll={scrollHandler}
           scrollEventThrottle={16}
         >
-          <View style={{ flexDirection: 'row', position: 'relative' }}>
+          <View className="flex-row relative">
             {/* 현재 시간선 — 전체 너비 */}
             {nowMin >= startMin && nowMin <= endMin && (
               <View
@@ -561,16 +553,16 @@ export default function MainScreen({ navigation, route }: Props) {
               </View>
             )}
             {/* 시간 라벨 */}
-            <View style={{ width: TIME_COL_WIDTH, position: 'relative' }}>
+            <View className="relative w-[58px]">
               {timeLabels.map(label => {
                 const { ampm, hour } = formatTimeLabel(label);
                 return (
                   <View
                     key={label}
-                    style={{ height: 60 * MIN_CELL_HEIGHT, alignItems: 'flex-end', paddingRight: 8 }}
+                    className="items-end pr-2 h-[90px]"
                   >
-                    <Text style={{ fontSize: 10, color: '#9ca3af', marginTop: -6 }}>
-                      {ampm} <Text style={{ fontSize: 14, fontWeight: '500' }}>{hour}</Text>시
+                    <Text className="text-[10px] text-[#9ca3af] -mt-[6px]">
+                      {ampm} <Text className="text-[14px] font-medium">{hour}</Text>시
                     </Text>
                   </View>
                 );
@@ -582,7 +574,7 @@ export default function MainScreen({ navigation, route }: Props) {
                   top: (nowMin - startMin) * MIN_CELL_HEIGHT - 6,
                   right: 6,
                 }}>
-                  <Text style={{ fontSize: 9, color: '#EF4444', fontWeight: '400' }}>
+                  <Text className="text-[9px] text-[#EF4444]">
                     {String(nowMin % 60).padStart(2, '0')}
                   </Text>
                 </View>
@@ -593,22 +585,25 @@ export default function MainScreen({ navigation, route }: Props) {
             {ALL_DAYS.map((day, dayIndex) => (
               <Animated.View
                 key={day}
-                style={[colStyles[dayIndex], { height: gridHeight, position: 'relative', borderLeftWidth: 1, borderLeftColor: '#f3f4f6', overflow: 'visible' }]}
+                className="relative border-l border-[#f3f4f6] overflow-visible"
+                style={[colStyles[dayIndex], { height: gridHeight }]}
               >
                 {/* 그리드 인프라 — 클리핑 적용 */}
-                <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' }}>
+                <View className="absolute inset-0 overflow-hidden">
                   {/* 시간 구분선 */}
                   {timeLabels.map((label, i) => (
                     <View
                       key={label}
-                      style={{ position: 'absolute', top: i * 60 * MIN_CELL_HEIGHT, left: 0, right: 0, borderTopWidth: 1, borderTopColor: '#f3f4f6' }}
+                      className="absolute left-0 right-0 border-t border-[#f3f4f6]"
+                      style={{ top: i * 60 * MIN_CELL_HEIGHT }}
                     />
                   ))}
                   {/* 30분 구분선 */}
                   {timeLabels.map((label, i) => (
                     <View
                       key={`h-${label}`}
-                      style={{ position: 'absolute', top: i * 60 * MIN_CELL_HEIGHT + 30 * MIN_CELL_HEIGHT, left: 0, right: 0, borderTopWidth: 1, borderTopColor: '#fafafa' }}
+                      className="absolute left-0 right-0 border-t border-[#fafafa]"
+                      style={{ top: i * 60 * MIN_CELL_HEIGHT + 30 * MIN_CELL_HEIGHT }}
                     />
                   ))}
                   {/* 빈 셀 (롱프레스=일정추가, 더블탭=줌) */}
@@ -617,7 +612,8 @@ export default function MainScreen({ navigation, route }: Props) {
                     return (
                       <Pressable
                         key={`cell-${label}`}
-                        style={{ position: 'absolute', top: i * 60 * MIN_CELL_HEIGHT, height: 60 * MIN_CELL_HEIGHT, left: 0, right: 0 }}
+                        className="absolute left-0 right-0"
+                        style={{ top: i * 60 * MIN_CELL_HEIGHT, height: 60 * MIN_CELL_HEIGHT }}
                         onPress={() => handleCellPress(dayIndex)}
                         onLongPress={() => handleCellLongPress(dayIndex, hour)}
                         delayLongPress={400}

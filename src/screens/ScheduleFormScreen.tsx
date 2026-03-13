@@ -236,10 +236,10 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
+        className="flex-1"
       >
         <ScrollView
-          style={{ flex: 1 }}
+          className="flex-1"
           contentContainerStyle={{ paddingTop: 20, paddingBottom: 48 }}
           keyboardShouldPersistTaps="handled"
         >
@@ -356,7 +356,7 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
           <View className="bg-white rounded-xl mx-4 mb-5 overflow-hidden">
             <View className="flex-row items-center justify-between px-4 py-[13px] min-h-[50px]">
               <Text className="text-[17px] text-[#1C1C1E]">알림</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <View className="flex-row items-center gap-[10px]">
                 <Switch
                   value={notifEnabled}
                   onValueChange={setNotifEnabled}
@@ -372,7 +372,7 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
                   onPress={() => setShowNotifPicker(v => !v)}
                 >
                   <Text className="text-[17px] text-[#1C1C1E]">시간</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                  <View className="flex-row items-center gap-[2px]">
                     <Text className="text-[17px] text-[#8E8E93]">{notifValueLabel}</Text>
                     <ChevronRight size={16} color="#8E8E93" />
                   </View>
