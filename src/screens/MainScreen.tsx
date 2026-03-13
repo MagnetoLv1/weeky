@@ -28,7 +28,7 @@ type Props = {
 
 const ALL_DAYS = ['월', '화', '수', '목', '금', '토', '일'];
 const TIME_COL_WIDTH = 44;
-const MIN_CELL_HEIGHT = 2; // 10분 = 2dp
+const MIN_CELL_HEIGHT = 1.5; // 10분 = 1.5dp
 const HEADER_HEIGHT = 44;
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const ZOOM_DURATION = 250;
