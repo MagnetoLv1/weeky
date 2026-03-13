@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
   TextInput,
   ScrollView,
-  FlatList,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -76,10 +75,24 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
   const [showNotifPicker, setShowNotifPicker] = useState(false);
 
   // 시간 피커
+  const ITEM_H = 44;
   const [timePickerVisible, setTimePickerVisible] = useState(false);
   const [editingTime, setEditingTime] = useState<'start' | 'end'>('start');
   const [pickerHour, setPickerHour] = useState('09');
   const [pickerMinute, setPickerMinute] = useState('00');
+  const hourScrollRef = useRef<ScrollView>(null);
+  const minuteScrollRef = useRef<ScrollView>(null);
+
+  // 모달이 열릴 때 선택된 시/분 위치로 스크롤
+  useEffect(() => {
+    if (!timePickerVisible) return;
+    const hIdx = parseInt(pickerHour, 10);
+    const mIdx = MINUTES.indexOf(pickerMinute);
+    setTimeout(() => {
+      hourScrollRef.current?.scrollTo({ y: hIdx * ITEM_H, animated: false });
+      minuteScrollRef.current?.scrollTo({ y: mIdx * ITEM_H, animated: false });
+    }, 50);
+  }, [timePickerVisible]);
 
   function openTimePicker(type: 'start' | 'end') {
     const time = type === 'start' ? startTime : endTime;
@@ -181,7 +194,7 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
           {isEditing ? '일정 편집' : '새로운 일정'}
         </Text>
         <TouchableOpacity onPress={handleSave} style={styles.headerBtn}>
-          <Text style={styles.headerAdd}>추가</Text>
+          <Text style={styles.headerAdd}>{isEditing ? '수정' : '추가'}</Text>
         </TouchableOpacity>
       </View>
 
@@ -398,53 +411,56 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
             </TouchableOpacity>
           </View>
 
+          {/* 선택 중앙 하이라이트 바 */}
+          <View style={styles.pickerHighlight} pointerEvents="none" />
+
           <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
-            <View style={{ flex: 1, height: 200 }}>
-              <FlatList
-                data={HOURS}
-                keyExtractor={item => item}
+            {/* 시 */}
+            <View style={{ flex: 1, height: 220, overflow: 'hidden' }}>
+              <ScrollView
+                ref={hourScrollRef}
                 showsVerticalScrollIndicator={false}
-                snapToInterval={44}
+                snapToInterval={ITEM_H}
                 decelerationRate="fast"
-                initialScrollIndex={parseInt(pickerHour, 10)}
-                getItemLayout={(_, index) => ({ length: 44, offset: 44 * index, index })}
                 onMomentumScrollEnd={e => {
-                  const index = Math.round(e.nativeEvent.contentOffset.y / 44);
-                  setPickerHour(HOURS[Math.min(index, 23)]);
+                  const index = Math.round(e.nativeEvent.contentOffset.y / ITEM_H);
+                  setPickerHour(HOURS[Math.min(Math.max(index, 0), 23)]);
                 }}
-                renderItem={({ item }) => (
-                  <View style={styles.pickerItem}>
+                contentContainerStyle={{ paddingVertical: (220 / 2) - (ITEM_H / 2) }}
+              >
+                {HOURS.map(item => (
+                  <View key={item} style={styles.pickerItem}>
                     <Text style={[styles.pickerText, item === pickerHour && styles.pickerTextSelected]}>
                       {item}
                     </Text>
                   </View>
-                )}
-                contentContainerStyle={{ paddingVertical: 78 }}
-              />
+                ))}
+              </ScrollView>
             </View>
+
             <Text style={styles.pickerColon}>:</Text>
-            <View style={{ flex: 1, height: 200 }}>
-              <FlatList
-                data={MINUTES}
-                keyExtractor={item => item}
+
+            {/* 분 */}
+            <View style={{ flex: 1, height: 220, overflow: 'hidden' }}>
+              <ScrollView
+                ref={minuteScrollRef}
                 showsVerticalScrollIndicator={false}
-                snapToInterval={44}
+                snapToInterval={ITEM_H}
                 decelerationRate="fast"
-                initialScrollIndex={MINUTES.indexOf(pickerMinute)}
-                getItemLayout={(_, index) => ({ length: 44, offset: 44 * index, index })}
                 onMomentumScrollEnd={e => {
-                  const index = Math.round(e.nativeEvent.contentOffset.y / 44);
-                  setPickerMinute(MINUTES[Math.min(index, MINUTES.length - 1)]);
+                  const index = Math.round(e.nativeEvent.contentOffset.y / ITEM_H);
+                  setPickerMinute(MINUTES[Math.min(Math.max(index, 0), MINUTES.length - 1)]);
                 }}
-                renderItem={({ item }) => (
-                  <View style={styles.pickerItem}>
+                contentContainerStyle={{ paddingVertical: (220 / 2) - (ITEM_H / 2) }}
+              >
+                {MINUTES.map(item => (
+                  <View key={item} style={styles.pickerItem}>
                     <Text style={[styles.pickerText, item === pickerMinute && styles.pickerTextSelected]}>
                       {item}
                     </Text>
                   </View>
-                )}
-                contentContainerStyle={{ paddingVertical: 78 }}
-              />
+                ))}
+              </ScrollView>
             </View>
           </View>
         </Modal>
@@ -696,5 +712,16 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '700',
     color: IOS_LABEL,
+  },
+  pickerHighlight: {
+    position: 'absolute',
+    left: 20,
+    right: 20,
+    top: '50%',
+    height: 44,
+    marginTop: 16, // modalHeader 높이 보정
+    backgroundColor: '#F2F2F7',
+    borderRadius: 8,
+    zIndex: 0,
   },
 });

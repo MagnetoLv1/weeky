@@ -9,12 +9,14 @@ import {
   TextInput,
   Portal,
   Modal,
+  IconButton,
 } from 'react-native-paper';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { getSettings, saveSettings } from '../store/settingsStore';
-import type { Settings } from '../types';
+import { getTimetables, saveTimetables } from '../store/timetableStore';
+import type { Settings, Timetable } from '../types';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Settings'>;
@@ -26,13 +28,18 @@ export default function SettingsScreen({ navigation }: Props) {
     timeRangeEnd: '23:00',
     showWeekends: false,
   });
+  const [timetables, setTimetables] = useState<Timetable[]>([]);
   const [timeModalVisible, setTimeModalVisible] = useState(false);
   const [editingTimeField, setEditingTimeField] = useState<'start' | 'end'>('start');
   const [tempTime, setTempTime] = useState('');
+  const [renameModalVisible, setRenameModalVisible] = useState(false);
+  const [renamingId, setRenamingId] = useState('');
+  const [tempName, setTempName] = useState('');
 
   useFocusEffect(
     useCallback(() => {
       setSettings(getSettings());
+      setTimetables(getTimetables());
     }, []),
   );
 
