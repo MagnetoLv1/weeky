@@ -166,13 +166,8 @@ function DraggableScheduleBlock({
     return { transform: [{ translateY: stickyOffset }] };
   });
 
-  const notif = schedule.notification;
-  const notifBarOffset = notif?.enabled ? notif.minutesBefore * MIN_CELL_HEIGHT : 0;
-  const showNotifBar = notif?.enabled && top >= notifBarOffset;
-
   return (
     <GestureDetector gesture={composed}>
-      {/* overflow: visible → 알림 바가 블록 위로 노출되도록 */}
       <Animated.View
         style={[
           {
@@ -181,48 +176,23 @@ function DraggableScheduleBlock({
             height,
             left: 1,
             right: 1,
-            overflow: 'visible',
+            backgroundColor: schedule.color,
+            borderRadius: 4,
+            overflow: 'hidden',
           },
           animStyle,
         ]}
       >
-        {/* 알림 바 — 블록과 함께 이동 */}
-        {showNotifBar && (
-          <View
-            pointerEvents="none"
-            style={{
-              position: 'absolute',
-              top: -notifBarOffset,
-              left: 0,
-              right: 0,
-              height: 2,
-              backgroundColor: '#FACC15',
-              borderRadius: 1,
-            }}
-          />
-        )}
-
-        {/* 블록 본체 */}
-        <View
-          style={{
-            position: 'absolute',
-            top: 0, left: 0, right: 0, bottom: 0,
-            backgroundColor: schedule.color,
-            borderRadius: 4,
-            overflow: 'hidden',
-          }}
-        >
-          <Animated.View style={[{ padding: 4 }, stickyLabelStyle]}>
-            <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: '700', color: '#1f2937' }}>
-              {schedule.title}
+        <Animated.View style={[{ padding: 4 }, stickyLabelStyle]}>
+          <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: '700', color: '#1f2937' }}>
+            {schedule.title}
+          </Text>
+          {schedule.subTitle ? (
+            <Text numberOfLines={1} style={{ fontSize: 9, color: '#4b5563' }}>
+              {schedule.subTitle}
             </Text>
-            {schedule.subTitle ? (
-              <Text numberOfLines={1} style={{ fontSize: 9, color: '#4b5563' }}>
-                {schedule.subTitle}
-              </Text>
-            ) : null}
-          </Animated.View>
-        </View>
+          ) : null}
+        </Animated.View>
       </Animated.View>
     </GestureDetector>
   );
@@ -629,7 +599,33 @@ export default function MainScreen({ navigation }: Props) {
                   })}
                 </View>
 
-                {/* 일정 블록 + 알림 바 (블록 내부에서 함께 렌더링) */}
+                {/* 알림 바 — 블록 시작 N분 전 위치에 독립 렌더링 */}
+                {activeTimetable?.schedules
+                  .filter(s => s.dayOfWeek.includes(dayIndex) && s.notification?.enabled)
+                  .map(schedule => {
+                    const { top } = getBlockStyle(schedule);
+                    const minutesBefore = schedule.notification!.minutesBefore;
+                    const barTop = top - minutesBefore * MIN_CELL_HEIGHT;
+                    if (barTop < 0) return null;
+                    return (
+                      <View
+                        key={`notif-${schedule.id}`}
+                        pointerEvents="none"
+                        style={{
+                          position: 'absolute',
+                          top: barTop,
+                          left: 1,
+                          right: 1,
+                          height: 2,
+                          backgroundColor: '#FACC15',
+                          borderRadius: 1,
+                          zIndex: 5,
+                        }}
+                      />
+                    );
+                  })}
+
+                {/* 일정 블록 */}
                 {activeTimetable?.schedules
                   .filter(s => s.dayOfWeek.includes(dayIndex))
                   .map(schedule => {
