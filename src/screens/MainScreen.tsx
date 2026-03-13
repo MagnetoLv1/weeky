@@ -6,7 +6,7 @@ import {
   Pressable,
   Dimensions,
 } from 'react-native';
-import { Bell, ChevronLeft, ChevronRight, Plus, Settings as SettingsIcon } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Plus, Settings as SettingsIcon } from 'lucide-react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -221,11 +221,6 @@ function DraggableScheduleBlock({
                 {schedule.subTitle}
               </Text>
             ) : null}
-            {notif?.enabled ? (
-              <View style={{ position: 'absolute', top: 2, right: 2 }}>
-                <Bell size={9} color="#1f2937" fill="#1f2937" />
-              </View>
-            ) : null}
           </Animated.View>
         </View>
       </Animated.View>
@@ -266,13 +261,13 @@ export default function MainScreen({ navigation }: Props) {
   const colW6 = useSharedValue(0);
   const colWs = [colW0, colW1, colW2, colW3, colW4, colW5, colW6];
 
-  const colStyle0 = useAnimatedStyle(() => ({ width: colW0.value, overflow: 'hidden' }));
-  const colStyle1 = useAnimatedStyle(() => ({ width: colW1.value, overflow: 'hidden' }));
-  const colStyle2 = useAnimatedStyle(() => ({ width: colW2.value, overflow: 'hidden' }));
-  const colStyle3 = useAnimatedStyle(() => ({ width: colW3.value, overflow: 'hidden' }));
-  const colStyle4 = useAnimatedStyle(() => ({ width: colW4.value, overflow: 'hidden' }));
-  const colStyle5 = useAnimatedStyle(() => ({ width: colW5.value, overflow: 'hidden' }));
-  const colStyle6 = useAnimatedStyle(() => ({ width: colW6.value, overflow: 'hidden' }));
+  const colStyle0 = useAnimatedStyle(() => ({ width: colW0.value, overflow: 'visible' }));
+  const colStyle1 = useAnimatedStyle(() => ({ width: colW1.value, overflow: 'visible' }));
+  const colStyle2 = useAnimatedStyle(() => ({ width: colW2.value, overflow: 'visible' }));
+  const colStyle3 = useAnimatedStyle(() => ({ width: colW3.value, overflow: 'visible' }));
+  const colStyle4 = useAnimatedStyle(() => ({ width: colW4.value, overflow: 'visible' }));
+  const colStyle5 = useAnimatedStyle(() => ({ width: colW5.value, overflow: 'visible' }));
+  const colStyle6 = useAnimatedStyle(() => ({ width: colW6.value, overflow: 'visible' }));
   const colStyles = [colStyle0, colStyle1, colStyle2, colStyle3, colStyle4, colStyle5, colStyle6];
 
   const slideStyle = useAnimatedStyle(() => ({
