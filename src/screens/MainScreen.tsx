@@ -7,11 +7,12 @@ import {
   Pressable,
   Dimensions,
 } from 'react-native';
-import { Bell, ChevronLeft, ChevronRight, Plus, Settings as SettingsIcon } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Plus, Settings as SettingsIcon } from 'lucide-react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  runOnJS,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
@@ -20,7 +21,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { getTimetables, saveTimetables } from '../store/timetableStore';
 import type { Timetable, Schedule } from '../types';
-import { timeToMinutes } from '../utils/time';
+import { timeToMinutes, minutesToTime } from '../utils/time';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Main'>;
@@ -57,10 +58,135 @@ function triggerHaptic() {
   });
 }
 
+// ── 드래그 가능한 일정 블록 ──────────────────────────────────────
+type DraggableBlockProps = {
+  schedule: Schedule;
+  top: number;
+  height: number;
+  startMin: number;
+  endMin: number;
+  onPress: () => void;
+  onDragStart: () => void;
+  onDragEnd: (scheduleId: string, newStartMin: number, durationMin: number) => void;
+};
+
+function DraggableScheduleBlock({
+  schedule,
+  top,
+  height,
+  startMin,
+  endMin,
+  onPress,
+  onDragStart,
+  onDragEnd,
+}: DraggableBlockProps) {
+  const isDragging = useSharedValue(false);
+  const offsetY = useSharedValue(0);
+  const prevTop = useRef(top);
+
+  // top prop이 변경되면(드래그 후 데이터 업데이트) offsetY를 리셋
+  // → 시각적 위치 = new_top + 0 = old_top + snappedDelta (깜빡임 없음)
+  useEffect(() => {
+    if (prevTop.current !== top) {
+      prevTop.current = top;
+      offsetY.value = 0;
+    }
+  }, [top]);
+
+  const durationMin =
+    timeToMinutes(schedule.endTime) - timeToMinutes(schedule.startTime);
+  const totalMinutes = endMin - startMin;
+
+  const tap = Gesture.Tap()
+    .maxDuration(300)
+    .onEnd((_, success) => {
+      if (success) runOnJS(onPress)();
+    });
+
+  const longPress = Gesture.LongPress()
+    .minDuration(400)
+    .onStart(() => {
+      isDragging.value = true;
+      runOnJS(triggerHaptic)();
+      runOnJS(onDragStart)();
+    });
+
+  const pan = Gesture.Pan()
+    .onChange(e => {
+      if (!isDragging.value) return;
+      const minOffset = -top;
+      const maxOffset = (totalMinutes - durationMin) * MIN_CELL_HEIGHT - top;
+      offsetY.value = Math.max(minOffset, Math.min(maxOffset, e.translationY));
+    })
+    .onFinalize(() => {
+      if (!isDragging.value) return;
+      const rawTop = top + offsetY.value;
+      const clampedMinutes = Math.min(
+        Math.round(Math.max(0, rawTop) / MIN_CELL_HEIGHT / 10) * 10,
+        totalMinutes - durationMin,
+      );
+      const newStartMin = startMin + clampedMinutes;
+      isDragging.value = false;
+      // offsetY를 스냅 위치로 유지 (top이 업데이트되면 useEffect에서 0으로 리셋)
+      offsetY.value = clampedMinutes * MIN_CELL_HEIGHT - top;
+      runOnJS(onDragEnd)(schedule.id, newStartMin, durationMin);
+    });
+
+  const composed = Gesture.Race(tap, Gesture.Simultaneous(longPress, pan));
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: offsetY.value }],
+    opacity: isDragging.value ? 0.8 : 1,
+    zIndex: isDragging.value ? 999 : 1,
+    shadowOpacity: isDragging.value ? 0.3 : 0,
+    shadowRadius: isDragging.value ? 8 : 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: isDragging.value ? 4 : 0 },
+    elevation: isDragging.value ? 8 : 0,
+  }));
+
+  return (
+    <GestureDetector gesture={composed}>
+      <Animated.View
+        style={[
+          {
+            position: 'absolute',
+            top,
+            height,
+            left: 1,
+            right: 1,
+            backgroundColor: schedule.color,
+            borderRadius: 4,
+            overflow: 'hidden',
+          },
+          animStyle,
+        ]}
+      >
+        {/* 노란 알림 바 */}
+        {schedule.notification?.enabled ? (
+          <View style={{ height: 3, backgroundColor: '#FACC15' }} />
+        ) : null}
+        <View style={{ padding: 4 }}>
+          <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: '700', color: '#1f2937' }}>
+            {schedule.title}
+          </Text>
+          {schedule.subTitle ? (
+            <Text numberOfLines={1} style={{ fontSize: 9, color: '#4b5563' }}>
+              {schedule.subTitle}
+            </Text>
+          ) : null}
+        </View>
+      </Animated.View>
+    </GestureDetector>
+  );
+}
+
+// ── 메인 화면 ──────────────────────────────────────────────────
 export default function MainScreen({ navigation }: Props) {
   const [timetables, setTimetables] = useState<Timetable[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [zoomedDay, setZoomedDay] = useState<number | null>(null);
+  const [isDraggingSchedule, setIsDraggingSchedule] = useState(false);
   const todayIndex = getTodayIndex();
 
   // 슬라이드 전환 애니메이션
@@ -182,6 +308,28 @@ export default function MainScreen({ navigation }: Props) {
     });
   }
 
+  function handleScheduleDragEnd(
+    scheduleId: string,
+    newStartMin: number,
+    durationMin: number,
+  ) {
+    setIsDraggingSchedule(false);
+    if (!activeTimetable) return;
+    const newStartTime = minutesToTime(newStartMin);
+    const newEndTime = minutesToTime(newStartMin + durationMin);
+    const updatedSchedules = activeTimetable.schedules.map(s =>
+      s.id === scheduleId
+        ? { ...s, startTime: newStartTime, endTime: newEndTime }
+        : s,
+    );
+    const updatedTimetables = timetables.map((tt, i) =>
+      i === activeIndex ? { ...tt, schedules: updatedSchedules } : tt,
+    );
+    saveTimetables(updatedTimetables);
+    setTimetables(updatedTimetables);
+    triggerHaptic();
+  }
+
   function getBlockStyle(schedule: Schedule) {
     const top = (timeToMinutes(schedule.startTime) - startMin) * MIN_CELL_HEIGHT;
     const height = Math.max(
@@ -298,7 +446,7 @@ export default function MainScreen({ navigation }: Props) {
         </View>
 
         {/* 시간표 그리드 */}
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView showsVerticalScrollIndicator={false} scrollEnabled={!isDraggingSchedule}>
           <View style={{ flexDirection: 'row' }}>
             {/* 시간 라벨 */}
             <View style={{ width: TIME_COL_WIDTH }}>
@@ -316,70 +464,56 @@ export default function MainScreen({ navigation }: Props) {
             {ALL_DAYS.map((day, dayIndex) => (
               <Animated.View
                 key={day}
-                style={[colStyles[dayIndex], { height: gridHeight, position: 'relative', borderLeftWidth: 1, borderLeftColor: '#f3f4f6' }]}
+                style={[colStyles[dayIndex], { height: gridHeight, position: 'relative', borderLeftWidth: 1, borderLeftColor: '#f3f4f6', overflow: 'visible' }]}
               >
-                {/* 시간 구분선 */}
-                {timeLabels.map((label, i) => (
-                  <View
-                    key={label}
-                    style={{ position: 'absolute', top: i * 60 * MIN_CELL_HEIGHT, left: 0, right: 0, borderTopWidth: 1, borderTopColor: '#f3f4f6' }}
-                  />
-                ))}
-                {/* 30분 구분선 */}
-                {timeLabels.map((label, i) => (
-                  <View
-                    key={`h-${label}`}
-                    style={{ position: 'absolute', top: i * 60 * MIN_CELL_HEIGHT + 30 * MIN_CELL_HEIGHT, left: 0, right: 0, borderTopWidth: 1, borderTopColor: '#fafafa' }}
-                  />
-                ))}
-
-                {/* 빈 셀 (롱프레스=일정추가, 더블탭=줌) */}
-                {timeLabels.slice(0, -1).map((label, i) => {
-                  const hour = timeToMinutes(label) / 60;
-                  return (
-                    <Pressable
-                      key={`cell-${label}`}
-                      style={{ position: 'absolute', top: i * 60 * MIN_CELL_HEIGHT, height: 60 * MIN_CELL_HEIGHT, left: 0, right: 0 }}
-                      onPress={() => handleCellPress(dayIndex)}
-                      onLongPress={() => handleCellLongPress(dayIndex, hour)}
-                      delayLongPress={400}
+                {/* 그리드 인프라 — 클리핑 적용 */}
+                <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' }}>
+                  {/* 시간 구분선 */}
+                  {timeLabels.map((label, i) => (
+                    <View
+                      key={label}
+                      style={{ position: 'absolute', top: i * 60 * MIN_CELL_HEIGHT, left: 0, right: 0, borderTopWidth: 1, borderTopColor: '#f3f4f6' }}
                     />
-                  );
-                })}
+                  ))}
+                  {/* 30분 구분선 */}
+                  {timeLabels.map((label, i) => (
+                    <View
+                      key={`h-${label}`}
+                      style={{ position: 'absolute', top: i * 60 * MIN_CELL_HEIGHT + 30 * MIN_CELL_HEIGHT, left: 0, right: 0, borderTopWidth: 1, borderTopColor: '#fafafa' }}
+                    />
+                  ))}
+                  {/* 빈 셀 (롱프레스=일정추가, 더블탭=줌) */}
+                  {timeLabels.slice(0, -1).map((label, i) => {
+                    const hour = timeToMinutes(label) / 60;
+                    return (
+                      <Pressable
+                        key={`cell-${label}`}
+                        style={{ position: 'absolute', top: i * 60 * MIN_CELL_HEIGHT, height: 60 * MIN_CELL_HEIGHT, left: 0, right: 0 }}
+                        onPress={() => handleCellPress(dayIndex)}
+                        onLongPress={() => handleCellLongPress(dayIndex, hour)}
+                        delayLongPress={400}
+                      />
+                    );
+                  })}
+                </View>
 
-                {/* 일정 블록 */}
+                {/* 일정 블록 (롱프레스 드래그로 시간 조정) */}
                 {activeTimetable?.schedules
                   .filter(s => s.dayOfWeek.includes(dayIndex))
                   .map(schedule => {
                     const { top, height } = getBlockStyle(schedule);
                     return (
-                      <Pressable
+                      <DraggableScheduleBlock
                         key={schedule.id}
+                        schedule={schedule}
+                        top={top}
+                        height={height}
+                        startMin={startMin}
+                        endMin={endMin}
                         onPress={() => handleSchedulePress(schedule)}
-                        style={{
-                          position: 'absolute',
-                          top,
-                          height,
-                          left: 1,
-                          right: 1,
-                          backgroundColor: schedule.color,
-                          borderRadius: 4,
-                          padding: 2,
-                          overflow: 'hidden',
-                        }}
-                      >
-                        <Text numberOfLines={1} style={{ fontSize: 10, fontWeight: '600', color: '#1f2937' }}>
-                          {schedule.title}
-                        </Text>
-                        {schedule.subTitle ? (
-                          <Text numberOfLines={1} style={{ fontSize: 9, color: '#4b5563' }}>
-                            {schedule.subTitle}
-                          </Text>
-                        ) : null}
-                        {schedule.notification?.enabled ? (
-                          <Bell size={8} color="#1f2937" />
-                        ) : null}
-                      </Pressable>
+                        onDragStart={() => setIsDraggingSchedule(true)}
+                        onDragEnd={handleScheduleDragEnd}
+                      />
                     );
                   })}
               </Animated.View>
