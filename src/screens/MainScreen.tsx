@@ -57,12 +57,12 @@ function generateTimeLabels(start: string, end: string): string[] {
   return labels;
 }
 
-function formatTimeLabel(label: string): string {
+function formatTimeLabel(label: string): { ampm: string; hour: number } {
   const h = parseInt(label.split(':')[0], 10);
-  if (h === 0) return '오전 12시';
-  if (h === 12) return '오후 12시';
-  if (h < 12) return `오전 ${h}시`;
-  return `오후 ${h - 12}시`;
+  if (h === 0) return { ampm: '오전', hour: 12 };
+  if (h === 12) return { ampm: '오후', hour: 12 };
+  if (h < 12) return { ampm: '오전', hour: h };
+  return { ampm: '오후', hour: h - 12 };
 }
 
 function triggerHaptic() {
@@ -562,16 +562,19 @@ export default function MainScreen({ navigation, route }: Props) {
             )}
             {/* 시간 라벨 */}
             <View style={{ width: TIME_COL_WIDTH, position: 'relative' }}>
-              {timeLabels.map(label => (
-                <View
-                  key={label}
-                  style={{ height: 60 * MIN_CELL_HEIGHT, alignItems: 'flex-end', paddingRight: 8 }}
-                >
-                  <Text style={{ fontSize: 10, color: '#9ca3af', marginTop: -6 }}>
-                    {formatTimeLabel(label)}
-                  </Text>
-                </View>
-              ))}
+              {timeLabels.map(label => {
+                const { ampm, hour } = formatTimeLabel(label);
+                return (
+                  <View
+                    key={label}
+                    style={{ height: 60 * MIN_CELL_HEIGHT, alignItems: 'flex-end', paddingRight: 8 }}
+                  >
+                    <Text style={{ fontSize: 10, color: '#9ca3af', marginTop: -6 }}>
+                      {ampm} <Text style={{ fontSize: 14, fontWeight: '500' }}>{hour}</Text>시
+                    </Text>
+                  </View>
+                );
+              })}
               {/* 현재 분 표시 */}
               {nowMin >= startMin && nowMin <= endMin && (
                 <View style={{
