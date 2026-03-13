@@ -3,16 +3,17 @@ import {
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
   Pressable,
   Dimensions,
 } from 'react-native';
-import { ChevronLeft, ChevronRight, Plus, Settings as SettingsIcon } from 'lucide-react-native';
+import { Bell, ChevronLeft, ChevronRight, Plus, Settings as SettingsIcon } from 'lucide-react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
+  useAnimatedScrollHandler,
   withTiming,
   runOnJS,
+  type SharedValue,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
@@ -65,6 +66,7 @@ type DraggableBlockProps = {
   height: number;
   startMin: number;
   endMin: number;
+  scrollY: SharedValue<number>;
   onPress: () => void;
   onDragStart: () => void;
   onDragEnd: (scheduleId: string, newStartMin: number, durationMin: number) => void;
@@ -76,6 +78,7 @@ function DraggableScheduleBlock({
   height,
   startMin,
   endMin,
+  scrollY,
   onPress,
   onDragStart,
   onDragEnd,
@@ -134,6 +137,8 @@ function DraggableScheduleBlock({
 
   const composed = Gesture.Race(tap, Gesture.Simultaneous(longPress, pan));
 
+  const LABEL_H = 34;
+
   const animStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: offsetY.value }],
     opacity: isDragging.value ? 0.8 : 1,
@@ -144,6 +149,14 @@ function DraggableScheduleBlock({
     shadowOffset: { width: 0, height: isDragging.value ? 4 : 0 },
     elevation: isDragging.value ? 8 : 0,
   }));
+
+  const stickyLabelStyle = useAnimatedStyle(() => {
+    const stickyOffset = Math.max(
+      0,
+      Math.min(scrollY.value - (top + offsetY.value), height - LABEL_H),
+    );
+    return { transform: [{ translateY: stickyOffset }] };
+  });
 
   return (
     <GestureDetector gesture={composed}>
@@ -162,11 +175,7 @@ function DraggableScheduleBlock({
           animStyle,
         ]}
       >
-        {/* 노란 알림 바 */}
-        {schedule.notification?.enabled ? (
-          <View style={{ height: 3, backgroundColor: '#FACC15' }} />
-        ) : null}
-        <View style={{ padding: 4 }}>
+        <Animated.View style={[{ padding: 4 }, stickyLabelStyle]}>
           <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: '700', color: '#1f2937' }}>
             {schedule.title}
           </Text>
@@ -175,7 +184,12 @@ function DraggableScheduleBlock({
               {schedule.subTitle}
             </Text>
           ) : null}
-        </View>
+          {schedule.notification?.enabled ? (
+            <View style={{ position: 'absolute', top: 2, right: 2 }}>
+              <Bell size={9} color="#1f2937" fill="#1f2937" />
+            </View>
+          ) : null}
+        </Animated.View>
       </Animated.View>
     </GestureDetector>
   );
@@ -187,10 +201,22 @@ export default function MainScreen({ navigation }: Props) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [zoomedDay, setZoomedDay] = useState<number | null>(null);
   const [isDraggingSchedule, setIsDraggingSchedule] = useState(false);
+  const [nowMin, setNowMin] = useState(() => {
+    const n = new Date();
+    return n.getHours() * 60 + n.getMinutes();
+  });
   const todayIndex = getTodayIndex();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const scrollRef = useRef<any>(null);
 
   // 슬라이드 전환 애니메이션
   const translateX = useSharedValue(0);
+
+  // 스크롤 위치 (sticky 라벨용)
+  const scrollY = useSharedValue(0);
+  const scrollHandler = useAnimatedScrollHandler(e => {
+    scrollY.value = e.contentOffset.y;
+  });
 
   // 7개 요일 컬럼 너비 (ALL_DAYS 인덱스 기준)
   const colW0 = useSharedValue(0);
@@ -232,6 +258,25 @@ export default function MainScreen({ navigation }: Props) {
   const endMin = timeToMinutes(ttEnd);
   const gridHeight = (endMin - startMin) * MIN_CELL_HEIGHT;
   const availableWidth = SCREEN_WIDTH - TIME_COL_WIDTH;
+
+  // 현재 시간 1분마다 갱신
+  useEffect(() => {
+    const tick = () => {
+      const n = new Date();
+      setNowMin(n.getHours() * 60 + n.getMinutes());
+    };
+    const id = setInterval(tick, 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  // 초기 스크롤: 현재 시간이 화면 중앙에 오도록
+  useEffect(() => {
+    if (timetables.length === 0) return;
+    const nowTop = (nowMin - startMin) * MIN_CELL_HEIGHT;
+    const { height: screenH } = Dimensions.get('window');
+    const offset = Math.max(0, nowTop - screenH / 2);
+    setTimeout(() => scrollRef.current?.scrollTo({ y: offset, animated: false }), 100);
+  }, [timetables.length > 0]);  // timetables 첫 로드 시 1회
 
   // 컬럼 너비 업데이트 (줌 상태 변경 시)
   useEffect(() => {
@@ -446,10 +491,41 @@ export default function MainScreen({ navigation }: Props) {
         </View>
 
         {/* 시간표 그리드 */}
-        <ScrollView showsVerticalScrollIndicator={false} scrollEnabled={!isDraggingSchedule}>
-          <View style={{ flexDirection: 'row' }}>
+        <Animated.ScrollView
+          ref={scrollRef}
+          showsVerticalScrollIndicator={false}
+          scrollEnabled={!isDraggingSchedule}
+          onScroll={scrollHandler}
+          scrollEventThrottle={16}
+        >
+          <View style={{ flexDirection: 'row', position: 'relative' }}>
+            {/* 현재 시간선 — 전체 너비 */}
+            {nowMin >= startMin && nowMin <= endMin && (
+              <View
+                pointerEvents="none"
+                style={{
+                  position: 'absolute',
+                  top: (nowMin - startMin) * MIN_CELL_HEIGHT,
+                  left: TIME_COL_WIDTH,
+                  right: 0,
+                  height: 1.5,
+                  backgroundColor: '#EF4444',
+                  zIndex: 10,
+                }}
+              >
+                <View style={{
+                  position: 'absolute',
+                  left: -3,
+                  top: -2.5,
+                  width: 7,
+                  height: 7,
+                  borderRadius: 3.5,
+                  backgroundColor: '#EF4444',
+                }} />
+              </View>
+            )}
             {/* 시간 라벨 */}
-            <View style={{ width: TIME_COL_WIDTH }}>
+            <View style={{ width: TIME_COL_WIDTH, position: 'relative' }}>
               {timeLabels.map(label => (
                 <View
                   key={label}
@@ -458,6 +534,19 @@ export default function MainScreen({ navigation }: Props) {
                   <Text style={{ fontSize: 10, color: '#9ca3af', marginTop: -6 }}>{label}</Text>
                 </View>
               ))}
+              {/* 현재 시간 레이블 */}
+              {nowMin >= startMin && nowMin <= endMin && (
+                <View style={{
+                  position: 'absolute',
+                  top: (nowMin - startMin) * MIN_CELL_HEIGHT - 7,
+                  right: 4,
+                  alignItems: 'flex-end',
+                }}>
+                  <Text style={{ fontSize: 9, color: '#EF4444', fontWeight: '700' }}>
+                    {`${String(Math.floor(nowMin / 60)).padStart(2, '0')}:${String(nowMin % 60).padStart(2, '0')}`}
+                  </Text>
+                </View>
+              )}
             </View>
 
             {/* 요일별 컬럼 */}
@@ -497,6 +586,31 @@ export default function MainScreen({ navigation }: Props) {
                   })}
                 </View>
 
+                {/* 알림 바 (일정 시작 N분 전 위치) */}
+                {activeTimetable?.schedules
+                  .filter(s => s.dayOfWeek.includes(dayIndex) && s.notification?.enabled)
+                  .map(schedule => {
+                    const { top } = getBlockStyle(schedule);
+                    const minutesBefore = schedule.notification!.minutesBefore;
+                    const barTop = top - minutesBefore * MIN_CELL_HEIGHT;
+                    if (barTop < 0) return null;
+                    return (
+                      <View
+                        key={`notif-${schedule.id}`}
+                        pointerEvents="none"
+                        style={{
+                          position: 'absolute',
+                          top: barTop,
+                          left: 1,
+                          right: 1,
+                          height: 2,
+                          backgroundColor: '#FACC15',
+                          borderRadius: 1,
+                        }}
+                      />
+                    );
+                  })}
+
                 {/* 일정 블록 (롱프레스 드래그로 시간 조정) */}
                 {activeTimetable?.schedules
                   .filter(s => s.dayOfWeek.includes(dayIndex))
@@ -510,6 +624,7 @@ export default function MainScreen({ navigation }: Props) {
                         height={height}
                         startMin={startMin}
                         endMin={endMin}
+                        scrollY={scrollY}
                         onPress={() => handleSchedulePress(schedule)}
                         onDragStart={() => setIsDraggingSchedule(true)}
                         onDragEnd={handleScheduleDragEnd}
@@ -519,7 +634,7 @@ export default function MainScreen({ navigation }: Props) {
               </Animated.View>
             ))}
           </View>
-        </ScrollView>
+        </Animated.ScrollView>
       </Animated.View>
     </View>
   );

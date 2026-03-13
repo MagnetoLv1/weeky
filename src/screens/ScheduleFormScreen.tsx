@@ -75,6 +75,8 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
   // 시간 피커
   const [timePickerVisible, setTimePickerVisible] = useState(false);
   const [editingTime, setEditingTime] = useState<'start' | 'end'>('start');
+  const [pendingTime, setPendingTime] = useState<string>('09:00');
+  const [originalTime, setOriginalTime] = useState<string>('09:00');
 
   function timeStringToDate(time: string): Date {
     const [h, m] = time.split(':').map(Number);
@@ -90,18 +92,35 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
   }
 
   function openTimePicker(type: 'start' | 'end') {
+    const current = type === 'start' ? startTime : endTime;
     setEditingTime(type);
+    setPendingTime(current);
+    setOriginalTime(current);
     setTimePickerVisible(true);
   }
 
   function handleTimeChange(_: unknown, selectedDate?: Date) {
     if (Platform.OS === 'android') {
       setTimePickerVisible(false);
+      if (!selectedDate) return;
+      const timeStr = dateToTimeString(selectedDate);
+      if (editingTime === 'start') setStartTime(timeStr);
+      else setEndTime(timeStr);
+      return;
     }
     if (!selectedDate) return;
-    const timeStr = dateToTimeString(selectedDate);
-    if (editingTime === 'start') setStartTime(timeStr);
-    else setEndTime(timeStr);
+    setPendingTime(dateToTimeString(selectedDate));
+  }
+
+  function confirmTimePicker() {
+    if (editingTime === 'start') setStartTime(pendingTime);
+    else setEndTime(pendingTime);
+    setTimePickerVisible(false);
+  }
+
+  function cancelTimePicker() {
+    // originalTime은 이미 state에 유지되므로 아무 것도 반영하지 않고 닫기
+    setTimePickerVisible(false);
   }
 
   function toggleDay(index: number) {
@@ -400,20 +419,20 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
         <View style={styles.iosPickerOverlay}>
           <View style={styles.iosPickerContainer}>
             <View style={styles.modalHeader}>
-              <TouchableOpacity onPress={() => setTimePickerVisible(false)}>
+              <TouchableOpacity onPress={cancelTimePicker}>
                 <Text style={styles.modalCancel}>취소</Text>
               </TouchableOpacity>
               <Text style={styles.modalTitle}>
                 {editingTime === 'start' ? '시작 시간' : '종료 시간'}
               </Text>
-              <TouchableOpacity onPress={() => setTimePickerVisible(false)}>
+              <TouchableOpacity onPress={confirmTimePicker}>
                 <Text style={styles.modalConfirm}>확인</Text>
               </TouchableOpacity>
             </View>
             <DateTimePicker
               mode="time"
               display="spinner"
-              value={timeStringToDate(editingTime === 'start' ? startTime : endTime)}
+              value={timeStringToDate(pendingTime)}
               onChange={handleTimeChange}
               minuteInterval={10}
               locale="ko_KR"
