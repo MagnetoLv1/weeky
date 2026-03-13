@@ -215,17 +215,22 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
     : selectedDays.map(i => DAYS[i]).join(', ') || '없음';
 
   return (
-    <View style={styles.root}>
+    <View className="flex-1 bg-[#F2F2F7]">
       {/* ── 헤더 ── */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-          <Text style={styles.headerCancel}>취소</Text>
+      <View
+        className="flex-row items-center justify-between px-4 pt-4 pb-3 bg-[#F2F2F7]"
+        style={{ borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#E5E5EA' }}
+      >
+        <TouchableOpacity onPress={() => navigation.goBack()} className="min-w-[48px]">
+          <Text className="text-[17px] text-blue-500">취소</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>
+        <Text className="text-[17px] font-semibold text-[#1C1C1E]">
           {isEditing ? '일정 편집' : '새로운 일정'}
         </Text>
-        <TouchableOpacity onPress={handleSave} style={styles.headerBtn}>
-          <Text style={styles.headerAdd}>{isEditing ? '수정' : '추가'}</Text>
+        <TouchableOpacity onPress={handleSave} className="min-w-[48px]">
+          <Text className="text-[17px] font-semibold text-blue-500 text-right">
+            {isEditing ? '수정' : '추가'}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -239,18 +244,18 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
           keyboardShouldPersistTaps="handled"
         >
           {/* ── Card 1: 제목 / 부제 ── */}
-          <View style={styles.card}>
+          <View className="bg-white rounded-xl mx-4 mb-5 overflow-hidden">
             <TextInput
-              style={styles.titleInput}
+              className="text-[17px] text-[#1C1C1E] px-4 py-[14px] min-h-[50px]"
               placeholder="제목"
               placeholderTextColor="#C7C7CC"
               value={title}
               onChangeText={setTitle}
               returnKeyType="next"
             />
-            <View style={styles.rowDivider} />
+            <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: '#E5E5EA', marginLeft: 16 }} />
             <TextInput
-              style={styles.subtitleInput}
+              className="text-[17px] text-[#1C1C1E] px-4 py-[14px] min-h-[50px]"
               placeholder="위치 또는 부제"
               placeholderTextColor="#C7C7CC"
               value={subTitle}
@@ -260,64 +265,64 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
           </View>
 
           {/* ── Card 2: 시간 ── */}
-          <View style={styles.card}>
+          <View className="bg-white rounded-xl mx-4 mb-5 overflow-hidden">
             {/* 반복 요일 */}
-            <View style={styles.row}>
-              <Text style={styles.rowLabel}>반복 요일</Text>
-              <Text style={styles.rowValueGray}>{selectedDaysLabel}</Text>
+            <View className="flex-row items-center justify-between px-4 py-[13px] min-h-[50px]">
+              <Text className="text-[17px] text-[#1C1C1E]">반복 요일</Text>
+              <Text className="text-[17px] text-[#8E8E93]">{selectedDaysLabel}</Text>
             </View>
-            <View style={styles.rowDivider} />
+            <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: '#E5E5EA', marginLeft: 16 }} />
             {/* 요일 칩 */}
-            <View style={styles.daysRow}>
+            <View className="flex-row px-3 py-[10px] gap-[6px]">
               {DAYS.map((day, i) => (
                 <TouchableOpacity
                   key={day}
                   onPress={() => toggleDay(i)}
-                  style={[
-                    styles.dayChip,
-                    selectedDays.includes(i) && styles.dayChipSelected,
-                  ]}
+                  className={`flex-1 h-[34px] rounded-[17px] items-center justify-center ${
+                    selectedDays.includes(i) ? 'bg-blue-500' : 'bg-[#E5E5EA]'
+                  }`}
                 >
-                  <Text style={[
-                    styles.dayChipText,
-                    selectedDays.includes(i) && styles.dayChipTextSelected,
-                  ]}>
+                  <Text className={`text-[13px] font-medium ${
+                    selectedDays.includes(i) ? 'text-white' : 'text-[#1C1C1E]'
+                  }`}>
                     {day}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
-            <View style={styles.rowDivider} />
+            <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: '#E5E5EA', marginLeft: 16 }} />
             {/* 시작 */}
-            <View style={styles.row}>
-              <Text style={styles.rowLabel}>시작</Text>
+            <View className="flex-row items-center justify-between px-4 py-[13px] min-h-[50px]">
+              <Text className="text-[17px] text-[#1C1C1E]">시작</Text>
               <TouchableOpacity
                 onPress={() => openTimePicker('start')}
-                style={styles.timePill}
+                className="bg-[#E5E5EA] rounded-lg px-3 py-[6px]"
               >
-                <Text style={styles.timePillText}>{formatTimeDisplay(startTime)}</Text>
+                <Text className="text-[17px] text-blue-500 font-medium">{formatTimeDisplay(startTime)}</Text>
               </TouchableOpacity>
             </View>
-            <View style={styles.rowDivider} />
+            <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: '#E5E5EA', marginLeft: 16 }} />
             {/* 종료 */}
-            <View style={styles.row}>
-              <Text style={styles.rowLabel}>종료</Text>
+            <View className="flex-row items-center justify-between px-4 py-[13px] min-h-[50px]">
+              <Text className="text-[17px] text-[#1C1C1E]">종료</Text>
               <TouchableOpacity
                 onPress={() => openTimePicker('end')}
-                style={styles.timePill}
+                className="bg-[#E5E5EA] rounded-lg px-3 py-[6px]"
               >
-                <Text style={styles.timePillText}>{formatTimeDisplay(endTime)}</Text>
+                <Text className="text-[17px] text-blue-500 font-medium">{formatTimeDisplay(endTime)}</Text>
               </TouchableOpacity>
             </View>
           </View>
 
           {/* ── Card 3: 색상 ── */}
-          <View style={styles.card}>
-            <View style={styles.row}>
-              <Text style={styles.rowLabel}>색상</Text>
-              <View style={[styles.colorDot, { backgroundColor: color }]} />
+          <View className="bg-white rounded-xl mx-4 mb-5 overflow-hidden">
+            <View className="flex-row items-center justify-between px-4 py-[13px] min-h-[50px]">
+              <Text className="text-[17px] text-[#1C1C1E]">색상</Text>
+              <View
+                style={{ backgroundColor: color, width: 20, height: 20, borderRadius: 10, borderWidth: 0.5, borderColor: 'rgba(0,0,0,0.08)' }}
+              />
             </View>
-            <View style={styles.rowDivider} />
+            <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: '#E5E5EA', marginLeft: 16 }} />
             <ScrollView
               ref={colorScrollRef}
               horizontal
@@ -329,9 +334,16 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
                   key={c}
                   onPress={() => setColor(c)}
                   style={[
-                    styles.colorCircle,
-                    { backgroundColor: c },
-                    color === c && styles.colorCircleSelected,
+                    {
+                      width: 36,
+                      height: 36,
+                      borderRadius: 18,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: c,
+                      borderWidth: color === c ? 3 : 0.5,
+                      borderColor: color === c ? '#3B82F6' : 'rgba(0,0,0,0.08)',
+                    },
                   ]}
                 >
                   {color === c && <Check size={14} color="#1f2937" />}
@@ -341,9 +353,9 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
           </View>
 
           {/* ── Card 4: 알림 ── */}
-          <View style={styles.card}>
-            <View style={styles.row}>
-              <Text style={styles.rowLabel}>알림</Text>
+          <View className="bg-white rounded-xl mx-4 mb-5 overflow-hidden">
+            <View className="flex-row items-center justify-between px-4 py-[13px] min-h-[50px]">
+              <Text className="text-[17px] text-[#1C1C1E]">알림</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <Switch
                   value={notifEnabled}
@@ -354,34 +366,32 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
             </View>
             {notifEnabled && (
               <>
-                <View style={styles.rowDivider} />
+                <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: '#E5E5EA', marginLeft: 16 }} />
                 <TouchableOpacity
-                  style={styles.row}
+                  className="flex-row items-center justify-between px-4 py-[13px] min-h-[50px]"
                   onPress={() => setShowNotifPicker(v => !v)}
                 >
-                  <Text style={styles.rowLabel}>시간</Text>
+                  <Text className="text-[17px] text-[#1C1C1E]">시간</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-                    <Text style={styles.rowValueGray}>{notifValueLabel}</Text>
+                    <Text className="text-[17px] text-[#8E8E93]">{notifValueLabel}</Text>
                     <ChevronRight size={16} color="#8E8E93" />
                   </View>
                 </TouchableOpacity>
                 {showNotifPicker && (
                   <>
-                    <View style={styles.rowDivider} />
-                    <View style={styles.notifOptions}>
+                    <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: '#E5E5EA', marginLeft: 16 }} />
+                    <View className="flex-row px-3 py-[10px] gap-[6px]">
                       {([0, 5, 10, 15, 30] as const).map(min => (
                         <TouchableOpacity
                           key={min}
-                          style={[
-                            styles.notifChip,
-                            notifMinutes === min && styles.notifChipSelected,
-                          ]}
+                          className={`flex-1 h-[34px] rounded-lg items-center justify-center ${
+                            notifMinutes === min ? 'bg-blue-500' : 'bg-[#E5E5EA]'
+                          }`}
                           onPress={() => { setNotifMinutes(min); setShowNotifPicker(false); }}
                         >
-                          <Text style={[
-                            styles.notifChipText,
-                            notifMinutes === min && styles.notifChipTextSelected,
-                          ]}>
+                          <Text className={`text-[12px] font-medium ${
+                            notifMinutes === min ? 'text-white' : 'text-[#1C1C1E]'
+                          }`}>
                             {NOTIF_LABELS[min]}
                           </Text>
                         </TouchableOpacity>
@@ -394,9 +404,9 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
           </View>
 
           {/* ── Card 5: 메모 ── */}
-          <View style={styles.card}>
+          <View className="bg-white rounded-xl mx-4 mb-5 overflow-hidden">
             <TextInput
-              style={styles.memoInput}
+              className="text-[17px] text-[#1C1C1E] px-4 py-[14px] min-h-[80px]"
               placeholder="메모"
               placeholderTextColor="#C7C7CC"
               value={memo}
@@ -408,8 +418,11 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
 
           {/* ── 삭제 버튼 (편집 모드) ── */}
           {isEditing && (
-            <TouchableOpacity onPress={handleDelete} style={styles.deleteCard}>
-              <Text style={styles.deleteText}>일정 삭제</Text>
+            <TouchableOpacity
+              onPress={handleDelete}
+              className="bg-white rounded-xl mx-4 mb-5 py-[14px] items-center"
+            >
+              <Text className="text-[17px] text-red-500">일정 삭제</Text>
             </TouchableOpacity>
           )}
         </ScrollView>
@@ -426,17 +439,20 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
         />
       )}
       {timePickerVisible && Platform.OS === 'ios' && (
-        <View style={styles.iosPickerOverlay}>
-          <View style={styles.iosPickerContainer}>
-            <View style={styles.modalHeader}>
+        <View
+          className="absolute inset-0 justify-end"
+          style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}
+        >
+          <View className="bg-white rounded-tl-2xl rounded-tr-2xl pb-5">
+            <View className="flex-row items-center justify-between px-5 pt-4 pb-2">
               <TouchableOpacity onPress={cancelTimePicker}>
-                <Text style={styles.modalCancel}>취소</Text>
+                <Text className="text-[17px] text-[#8E8E93]">취소</Text>
               </TouchableOpacity>
-              <Text style={styles.modalTitle}>
+              <Text className="text-[17px] font-semibold text-[#1C1C1E]">
                 {editingTime === 'start' ? '시작 시간' : '종료 시간'}
               </Text>
               <TouchableOpacity onPress={confirmTimePicker}>
-                <Text style={styles.modalConfirm}>확인</Text>
+                <Text className="text-[17px] font-semibold text-blue-500">확인</Text>
               </TouchableOpacity>
             </View>
             <DateTimePicker
@@ -454,241 +470,3 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
     </View>
   );
 }
-
-const IOS_BG = '#F2F2F7';
-const IOS_LABEL = '#1C1C1E';
-const IOS_GRAY = '#8E8E93';
-const IOS_SEPARATOR = '#E5E5EA';
-const IOS_BLUE = '#3B82F6';
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: IOS_BG,
-  },
-  // ── 헤더 ──
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
-    backgroundColor: IOS_BG,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: IOS_SEPARATOR,
-  },
-  headerBtn: {
-    minWidth: 48,
-  },
-  headerCancel: {
-    fontSize: 17,
-    color: IOS_BLUE,
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: IOS_LABEL,
-  },
-  headerAdd: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: IOS_BLUE,
-    textAlign: 'right',
-  },
-  // ── 카드 ──
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    marginHorizontal: 16,
-    marginBottom: 20,
-    overflow: 'hidden',
-  },
-  // ── 행 ──
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    minHeight: 50,
-  },
-  rowLabel: {
-    fontSize: 17,
-    color: IOS_LABEL,
-  },
-  rowValueGray: {
-    fontSize: 17,
-    color: IOS_GRAY,
-  },
-  rowDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: IOS_SEPARATOR,
-    marginLeft: 16,
-  },
-  // ── 입력 ──
-  titleInput: {
-    fontSize: 17,
-    color: IOS_LABEL,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    minHeight: 50,
-  },
-  subtitleInput: {
-    fontSize: 17,
-    color: IOS_LABEL,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    minHeight: 50,
-  },
-  memoInput: {
-    fontSize: 17,
-    color: IOS_LABEL,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    minHeight: 80,
-  },
-  // ── 요일 칩 ──
-  daysRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 6,
-  },
-  dayChip: {
-    flex: 1,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: IOS_SEPARATOR,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dayChipSelected: {
-    backgroundColor: IOS_BLUE,
-  },
-  dayChipText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: IOS_LABEL,
-  },
-  dayChipTextSelected: {
-    color: '#FFFFFF',
-  },
-  // ── 시간 pill ──
-  timePill: {
-    backgroundColor: IOS_SEPARATOR,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  timePillText: {
-    fontSize: 17,
-    color: IOS_BLUE,
-    fontWeight: '500',
-  },
-  // ── 색상 ──
-  colorDot: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 0.5,
-    borderColor: 'rgba(0,0,0,0.08)',
-  },
-  colorGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 10,
-  },
-  colorCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 0.5,
-    borderColor: 'rgba(0,0,0,0.08)',
-  },
-  colorCircleSelected: {
-    borderWidth: 3,
-    borderColor: IOS_BLUE,
-  },
-  // ── 알림 옵션 ──
-  notifOptions: {
-    flexDirection: 'row',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 6,
-  },
-  notifChip: {
-    flex: 1,
-    height: 34,
-    borderRadius: 8,
-    backgroundColor: IOS_SEPARATOR,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  notifChipSelected: {
-    backgroundColor: IOS_BLUE,
-  },
-  notifChipText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: IOS_LABEL,
-  },
-  notifChipTextSelected: {
-    color: '#FFFFFF',
-  },
-  // ── 삭제 ──
-  deleteCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    marginHorizontal: 16,
-    marginBottom: 20,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  deleteText: {
-    fontSize: 17,
-    color: '#FF3B30',
-  },
-  // ── iOS 시간 피커 ──
-  iosPickerOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    top: 0,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
-  },
-  iosPickerContainer: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    paddingBottom: 20,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  modalCancel: {
-    fontSize: 17,
-    color: IOS_GRAY,
-  },
-  modalTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: IOS_LABEL,
-  },
-  modalConfirm: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: IOS_BLUE,
-  },
-});

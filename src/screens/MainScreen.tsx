@@ -685,11 +685,17 @@ export default function MainScreen({ navigation, route }: Props) {
         <Modal
           visible={addModalVisible}
           onDismiss={() => setAddModalVisible(false)}
-          contentContainerStyle={styles.modal}
+          contentContainerStyle={{
+            backgroundColor: '#fff',
+            marginHorizontal: 32,
+            borderRadius: 16,
+            padding: 24,
+          }}
         >
-          <Text style={styles.modalTitle}>새 시간표</Text>
+          <Text className="text-[17px] font-semibold text-[#1C1C1E] mb-4">새 시간표</Text>
           <TextInput
-            style={styles.modalInput}
+            style={{ borderWidth: StyleSheet.hairlineWidth, borderColor: '#E5E5EA' }}
+            className="rounded-lg px-3 py-[10px] text-[16px] text-[#1C1C1E] bg-[#F2F2F7]"
             value={newTimetableName}
             onChangeText={setNewTimetableName}
             placeholder="시간표 이름"
@@ -699,7 +705,7 @@ export default function MainScreen({ navigation, route }: Props) {
             onSubmitEditing={confirmAddTimetable}
             returnKeyType="done"
           />
-          <View style={styles.modalButtons}>
+          <View className="flex-row justify-end gap-2 mt-4">
             <Button onPress={() => setAddModalVisible(false)} textColor="#6b7280">
               취소
             </Button>
@@ -712,34 +718,3 @@ export default function MainScreen({ navigation, route }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  modal: {
-    backgroundColor: '#fff',
-    marginHorizontal: 32,
-    borderRadius: 16,
-    padding: 24,
-  },
-  modalTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#1C1C1E',
-    marginBottom: 16,
-  },
-  modalInput: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#E5E5EA',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-    color: '#1C1C1E',
-    backgroundColor: '#F2F2F7',
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 8,
-    marginTop: 16,
-  },
-});

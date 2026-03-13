@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, Alert, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, Alert, TouchableOpacity, Platform } from 'react-native';
 import {
   List,
   Switch,
@@ -148,17 +148,22 @@ export default function SettingsScreen({ navigation, route }: Props) {
   if (!current) return null;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f9fafb' }}>
+    <View className="flex-1 bg-gray-50">
       {/* 시간표 정보 섹션 */}
       <List.Section>
-        <List.Subheader style={styles.subheader}>시간표</List.Subheader>
-        <View style={styles.card}>
+        <List.Subheader className="text-gray-500 text-[12px] uppercase tracking-[0.5px]">
+          시간표
+        </List.Subheader>
+        <View className="bg-white mx-4 rounded-xl overflow-hidden">
           <List.Item
             title={current.name}
             description="시간표 이름"
             right={() => (
-              <TouchableOpacity onPress={openRenameModal} style={styles.editBtn}>
-                <Text style={{ color: '#3b82f6', fontSize: 14 }}>편집</Text>
+              <TouchableOpacity
+                onPress={openRenameModal}
+                className="self-center px-2"
+              >
+                <Text className="text-blue-500 text-[14px]">편집</Text>
               </TouchableOpacity>
             )}
           />
@@ -167,14 +172,16 @@ export default function SettingsScreen({ navigation, route }: Props) {
 
       {/* 시간 범위 섹션 */}
       <List.Section>
-        <List.Subheader style={styles.subheader}>시간 범위</List.Subheader>
-        <View style={styles.card}>
+        <List.Subheader className="text-gray-500 text-[12px] uppercase tracking-[0.5px]">
+          시간 범위
+        </List.Subheader>
+        <View className="bg-white mx-4 rounded-xl overflow-hidden">
           <List.Item
             title="시작 시간"
             description="시간표가 시작되는 시각"
             right={() => (
-              <View style={styles.timeValue}>
-                <Text style={{ color: '#3b82f6', fontWeight: '600', fontSize: 16 }}>
+              <View className="self-center pr-1">
+                <Text className="text-blue-500 font-semibold text-[16px]">
                   {ttStart}
                 </Text>
               </View>
@@ -186,8 +193,8 @@ export default function SettingsScreen({ navigation, route }: Props) {
             title="종료 시간"
             description="시간표가 끝나는 시각"
             right={() => (
-              <View style={styles.timeValue}>
-                <Text style={{ color: '#3b82f6', fontWeight: '600', fontSize: 16 }}>
+              <View className="self-center pr-1">
+                <Text className="text-blue-500 font-semibold text-[16px]">
                   {ttEnd}
                 </Text>
               </View>
@@ -199,8 +206,10 @@ export default function SettingsScreen({ navigation, route }: Props) {
 
       {/* 표시 설정 섹션 */}
       <List.Section>
-        <List.Subheader style={styles.subheader}>표시 설정</List.Subheader>
-        <View style={styles.card}>
+        <List.Subheader className="text-gray-500 text-[12px] uppercase tracking-[0.5px]">
+          표시 설정
+        </List.Subheader>
+        <View className="bg-white mx-4 rounded-xl overflow-hidden">
           <List.Item
             title="주말 표시"
             description="토요일 · 일요일 컬럼 표시"
@@ -217,7 +226,7 @@ export default function SettingsScreen({ navigation, route }: Props) {
       {/* 시간표 삭제 */}
       {timetables.length > 1 && (
         <List.Section>
-          <View style={styles.card}>
+          <View className="bg-white mx-4 rounded-xl overflow-hidden">
             <List.Item
               title="시간표 삭제"
               titleStyle={{ color: '#ef4444' }}
@@ -229,11 +238,11 @@ export default function SettingsScreen({ navigation, route }: Props) {
 
       {/* 버전 정보 */}
       <List.Section>
-        <View style={styles.card}>
+        <View className="bg-white mx-4 rounded-xl overflow-hidden">
           <List.Item
             title="버전"
             right={() => (
-              <Text style={{ color: '#9ca3af', alignSelf: 'center' }}>0.0.1</Text>
+              <Text className="text-gray-400 self-center">0.0.1</Text>
             )}
           />
         </View>
@@ -244,9 +253,14 @@ export default function SettingsScreen({ navigation, route }: Props) {
         <Modal
           visible={renameModalVisible}
           onDismiss={() => setRenameModalVisible(false)}
-          contentContainerStyle={styles.modal}
+          contentContainerStyle={{
+            backgroundColor: '#fff',
+            marginHorizontal: 24,
+            borderRadius: 16,
+            padding: 24,
+          }}
         >
-          <Text style={{ marginBottom: 16, fontWeight: '600', fontSize: 16 }}>
+          <Text className="mb-4 font-semibold text-[16px]">
             시간표 이름 변경
           </Text>
           <TextInput
@@ -281,17 +295,20 @@ export default function SettingsScreen({ navigation, route }: Props) {
 
       {/* OS 기본 시간 피커 — iOS sheet */}
       {timePickerVisible && Platform.OS === 'ios' && (
-        <View style={styles.iosPickerOverlay}>
-          <View style={styles.iosPickerContainer}>
-            <View style={styles.pickerHeader}>
+        <View
+          className="absolute inset-0 justify-end"
+          style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}
+        >
+          <View className="bg-white rounded-tl-2xl rounded-tr-2xl pb-5">
+            <View className="flex-row items-center justify-between px-5 pt-4 pb-2">
               <TouchableOpacity onPress={cancelTimePicker}>
-                <Text style={styles.pickerCancel}>취소</Text>
+                <Text className="text-[17px] text-[#8E8E93]">취소</Text>
               </TouchableOpacity>
-              <Text style={styles.pickerTitle}>
+              <Text className="text-[17px] font-semibold text-[#1C1C1E]">
                 {editingTimeField === 'start' ? '시작 시간' : '종료 시간'}
               </Text>
               <TouchableOpacity onPress={confirmTimePicker}>
-                <Text style={styles.pickerConfirm}>확인</Text>
+                <Text className="text-[17px] font-semibold text-blue-500">확인</Text>
               </TouchableOpacity>
             </View>
             <DateTimePicker
@@ -309,69 +326,3 @@ export default function SettingsScreen({ navigation, route }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  subheader: {
-    color: '#6b7280',
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  card: {
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  timeValue: {
-    alignSelf: 'center',
-    paddingRight: 4,
-  },
-  editBtn: {
-    alignSelf: 'center',
-    paddingHorizontal: 8,
-  },
-  modal: {
-    backgroundColor: '#fff',
-    marginHorizontal: 24,
-    borderRadius: 16,
-    padding: 24,
-  },
-  iosPickerOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    top: 0,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
-  },
-  iosPickerContainer: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    paddingBottom: 20,
-  },
-  pickerHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  pickerCancel: {
-    fontSize: 17,
-    color: '#8E8E93',
-  },
-  pickerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#1C1C1E',
-  },
-  pickerConfirm: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#3B82F6',
-  },
-});
