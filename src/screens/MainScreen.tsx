@@ -109,7 +109,7 @@ export default function MainScreen({ navigation }: Props) {
   const timeLabels = generateTimeLabels(settings.timeRangeStart, settings.timeRangeEnd);
   const startMin = timeToMinutes(settings.timeRangeStart);
   const endMin = timeToMinutes(settings.timeRangeEnd);
-  const gridHeight = ((endMin - startMin) / 10) * MIN_CELL_HEIGHT;
+  const gridHeight = (endMin - startMin) * MIN_CELL_HEIGHT;
   const availableWidth = SCREEN_WIDTH - TIME_COL_WIDTH;
 
   // 컬럼 너비 업데이트 (줌 상태 변경 시)
@@ -188,11 +188,9 @@ export default function MainScreen({ navigation }: Props) {
   }
 
   function getBlockStyle(schedule: Schedule) {
-    const top =
-      ((timeToMinutes(schedule.startTime) - startMin) / 10) * MIN_CELL_HEIGHT;
+    const top = (timeToMinutes(schedule.startTime) - startMin) * MIN_CELL_HEIGHT;
     const height = Math.max(
-      ((timeToMinutes(schedule.endTime) - timeToMinutes(schedule.startTime)) / 10) *
-        MIN_CELL_HEIGHT,
+      (timeToMinutes(schedule.endTime) - timeToMinutes(schedule.startTime)) * MIN_CELL_HEIGHT,
       MIN_CELL_HEIGHT * 2,
     );
     return { top, height };
