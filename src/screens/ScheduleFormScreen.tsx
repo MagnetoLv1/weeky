@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Platform,
   StyleSheet,
   TouchableOpacity,
+  Dimensions,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Switch } from 'react-native-paper';
@@ -33,6 +34,7 @@ const PASTEL_COLORS = [
 ];
 
 const NOTIF_LABELS: Record<number, string> = {
+  0: '시작 시간',
   5: '5분 전',
   10: '10분 전',
   15: '15분 전',
@@ -66,10 +68,26 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
   const [endTime, setEndTime] = useState(schedule?.endTime ?? defaultEndTime ?? '10:00');
   const [color, setColor] = useState(schedule?.color ?? PASTEL_COLORS[4]);
   const [notifEnabled, setNotifEnabled] = useState(schedule?.notification?.enabled ?? false);
-  const [notifMinutes, setNotifMinutes] = useState<5 | 10 | 15 | 30>(
+  const [notifMinutes, setNotifMinutes] = useState<0 | 5 | 10 | 15 | 30>(
     schedule?.notification?.minutesBefore ?? 10,
   );
-  const [showColorPicker, setShowColorPicker] = useState(false);
+  const colorScrollRef = useRef<ScrollView>(null);
+
+  const COLOR_CIRCLE = 36;
+  const COLOR_GAP = 10;
+  const COLOR_STRIDE = COLOR_CIRCLE + COLOR_GAP;
+
+  // 화면 열릴 때 선택된 색상이 가운데 오도록 스크롤
+  useEffect(() => {
+    const idx = PASTEL_COLORS.indexOf(color);
+    if (idx < 0) return;
+    const screenW = Dimensions.get('window').width;
+    const scrollX = Math.max(0, idx * COLOR_STRIDE - screenW / 2 + COLOR_CIRCLE / 2 + 16);
+    setTimeout(() => {
+      colorScrollRef.current?.scrollTo({ x: scrollX, animated: false });
+    }, 50);
+  }, []);
+
   const [showNotifPicker, setShowNotifPicker] = useState(false);
 
   // 시간 피커
@@ -295,39 +313,31 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
 
           {/* ── Card 3: 색상 ── */}
           <View style={styles.card}>
-            <TouchableOpacity
-              style={styles.row}
-              onPress={() => setShowColorPicker(v => !v)}
-            >
+            <View style={styles.row}>
               <Text style={styles.rowLabel}>색상</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <View style={[styles.colorDot, { backgroundColor: color }]} />
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-                  <Text style={styles.rowValueGray}>선택됨</Text>
-                  <ChevronRight size={16} color="#8E8E93" />
-                </View>
-              </View>
-            </TouchableOpacity>
-            {showColorPicker && (
-              <>
-                <View style={styles.rowDivider} />
-                <View style={styles.colorGrid}>
-                  {PASTEL_COLORS.map(c => (
-                    <TouchableOpacity
-                      key={c}
-                      onPress={() => { setColor(c); setShowColorPicker(false); }}
-                      style={[
-                        styles.colorCircle,
-                        { backgroundColor: c },
-                        color === c && styles.colorCircleSelected,
-                      ]}
-                    >
-                      {color === c && <Check size={14} color="#1f2937" />}
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </>
-            )}
+              <View style={[styles.colorDot, { backgroundColor: color }]} />
+            </View>
+            <View style={styles.rowDivider} />
+            <ScrollView
+              ref={colorScrollRef}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12, gap: 10 }}
+            >
+              {PASTEL_COLORS.map(c => (
+                <TouchableOpacity
+                  key={c}
+                  onPress={() => setColor(c)}
+                  style={[
+                    styles.colorCircle,
+                    { backgroundColor: c },
+                    color === c && styles.colorCircleSelected,
+                  ]}
+                >
+                  {color === c && <Check size={14} color="#1f2937" />}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
 
           {/* ── Card 4: 알림 ── */}
@@ -359,7 +369,7 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
                   <>
                     <View style={styles.rowDivider} />
                     <View style={styles.notifOptions}>
-                      {([5, 10, 15, 30] as const).map(min => (
+                      {([0, 5, 10, 15, 30] as const).map(min => (
                         <TouchableOpacity
                           key={min}
                           style={[

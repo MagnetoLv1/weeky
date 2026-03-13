@@ -10,7 +10,7 @@ export interface Schedule {
   isRepeating: boolean;
   notification?: {
     enabled: boolean;
-    minutesBefore: 5 | 10 | 15 | 30;
+    minutesBefore: 0 | 5 | 10 | 15 | 30;
   };
 }
 

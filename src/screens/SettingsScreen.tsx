@@ -1,7 +1,6 @@
 import React, { useCallback, useState } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
+import { View, Text, StyleSheet, Alert, TouchableOpacity, Platform } from 'react-native';
 import {
-  Text,
   List,
   Switch,
   Divider,
@@ -9,8 +8,8 @@ import {
   TextInput,
   Portal,
   Modal,
-  IconButton,
 } from 'react-native-paper';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
@@ -23,15 +22,29 @@ type Props = {
   route: RouteProp<RootStackParamList, 'Settings'>;
 };
 
+function timeStringToDate(time: string): Date {
+  const [h, m] = time.split(':').map(Number);
+  const d = new Date();
+  d.setHours(h, m, 0, 0);
+  return d;
+}
+
+function dateToTimeString(date: Date): string {
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
 export default function SettingsScreen({ navigation, route }: Props) {
   const { timetableId } = route.params;
 
   const [timetables, setTimetables] = useState<Timetable[]>([]);
-  const [timeModalVisible, setTimeModalVisible] = useState(false);
-  const [editingTimeField, setEditingTimeField] = useState<'start' | 'end'>('start');
-  const [tempTime, setTempTime] = useState('');
   const [renameModalVisible, setRenameModalVisible] = useState(false);
   const [tempName, setTempName] = useState('');
+
+  // 시간 피커
+  const [timePickerVisible, setTimePickerVisible] = useState(false);
+  const [editingTimeField, setEditingTimeField] = useState<'start' | 'end'>('start');
+  const [pendingTime, setPendingTime] = useState('07:00');
+  const [originalTime, setOriginalTime] = useState('07:00');
 
   useFocusEffect(
     useCallback(() => {
@@ -52,26 +65,42 @@ export default function SettingsScreen({ navigation, route }: Props) {
     setTimetables(updated);
   }
 
-  function openTimeModal(field: 'start' | 'end') {
+  function openTimePicker(field: 'start' | 'end') {
+    const current_time = field === 'start' ? ttStart : ttEnd;
     setEditingTimeField(field);
-    setTempTime(field === 'start' ? ttStart : ttEnd);
-    setTimeModalVisible(true);
+    setPendingTime(current_time);
+    setOriginalTime(current_time);
+    setTimePickerVisible(true);
   }
 
-  function confirmTimeModal() {
-    const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
-    if (!timeRegex.test(tempTime)) {
-      Alert.alert('형식 오류', 'HH:MM 형식으로 입력해 주세요. (예: 07:00)');
+  function handleTimeChange(_: unknown, selectedDate?: Date) {
+    if (Platform.OS === 'android') {
+      setTimePickerVisible(false);
+      if (!selectedDate) return;
+      applyTime(dateToTimeString(selectedDate));
       return;
     }
-    const newStart = editingTimeField === 'start' ? tempTime : ttStart;
-    const newEnd = editingTimeField === 'end' ? tempTime : ttEnd;
+    if (!selectedDate) return;
+    setPendingTime(dateToTimeString(selectedDate));
+  }
+
+  function applyTime(time: string) {
+    const newStart = editingTimeField === 'start' ? time : ttStart;
+    const newEnd = editingTimeField === 'end' ? time : ttEnd;
     if (newStart >= newEnd) {
       Alert.alert('시간 오류', '종료 시간은 시작 시간보다 늦어야 합니다.');
       return;
     }
     updateCurrent({ timeRangeStart: newStart, timeRangeEnd: newEnd });
-    setTimeModalVisible(false);
+  }
+
+  function confirmTimePicker() {
+    applyTime(pendingTime);
+    setTimePickerVisible(false);
+  }
+
+  function cancelTimePicker() {
+    setTimePickerVisible(false);
   }
 
   function openRenameModal() {
@@ -126,12 +155,9 @@ export default function SettingsScreen({ navigation, route }: Props) {
             title={current.name}
             description="시간표 이름"
             right={() => (
-              <IconButton
-                icon="pencil-outline"
-                size={18}
-                iconColor="#3b82f6"
-                onPress={openRenameModal}
-              />
+              <TouchableOpacity onPress={openRenameModal} style={styles.editBtn}>
+                <Text style={{ color: '#3b82f6', fontSize: 14 }}>편집</Text>
+              </TouchableOpacity>
             )}
           />
         </View>
@@ -146,12 +172,12 @@ export default function SettingsScreen({ navigation, route }: Props) {
             description="시간표가 시작되는 시각"
             right={() => (
               <View style={styles.timeValue}>
-                <Text variant="titleMedium" style={{ color: '#3b82f6', fontWeight: '600' }}>
+                <Text style={{ color: '#3b82f6', fontWeight: '600', fontSize: 16 }}>
                   {ttStart}
                 </Text>
               </View>
             )}
-            onPress={() => openTimeModal('start')}
+            onPress={() => openTimePicker('start')}
           />
           <Divider />
           <List.Item
@@ -159,12 +185,12 @@ export default function SettingsScreen({ navigation, route }: Props) {
             description="시간표가 끝나는 시각"
             right={() => (
               <View style={styles.timeValue}>
-                <Text variant="titleMedium" style={{ color: '#3b82f6', fontWeight: '600' }}>
+                <Text style={{ color: '#3b82f6', fontWeight: '600', fontSize: 16 }}>
                   {ttEnd}
                 </Text>
               </View>
             )}
-            onPress={() => openTimeModal('end')}
+            onPress={() => openTimePicker('end')}
           />
         </View>
       </List.Section>
@@ -205,9 +231,7 @@ export default function SettingsScreen({ navigation, route }: Props) {
           <List.Item
             title="버전"
             right={() => (
-              <Text variant="bodyMedium" style={{ color: '#9ca3af', alignSelf: 'center' }}>
-                0.0.1
-              </Text>
+              <Text style={{ color: '#9ca3af', alignSelf: 'center' }}>0.0.1</Text>
             )}
           />
         </View>
@@ -220,7 +244,7 @@ export default function SettingsScreen({ navigation, route }: Props) {
           onDismiss={() => setRenameModalVisible(false)}
           contentContainerStyle={styles.modal}
         >
-          <Text variant="titleMedium" style={{ marginBottom: 16, fontWeight: '600' }}>
+          <Text style={{ marginBottom: 16, fontWeight: '600', fontSize: 16 }}>
             시간표 이름 변경
           </Text>
           <TextInput
@@ -242,36 +266,44 @@ export default function SettingsScreen({ navigation, route }: Props) {
         </Modal>
       </Portal>
 
-      {/* 시간 편집 모달 */}
-      <Portal>
-        <Modal
-          visible={timeModalVisible}
-          onDismiss={() => setTimeModalVisible(false)}
-          contentContainerStyle={styles.modal}
-        >
-          <Text variant="titleMedium" style={{ marginBottom: 16, fontWeight: '600' }}>
-            {editingTimeField === 'start' ? '시작 시간 설정' : '종료 시간 설정'}
-          </Text>
-          <TextInput
-            label="시간 (HH:MM)"
-            mode="outlined"
-            value={tempTime}
-            onChangeText={setTempTime}
-            placeholder="07:00"
-            keyboardType="numbers-and-punctuation"
-            autoFocus
-            style={{ backgroundColor: '#fff' }}
-          />
-          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
-            <Button onPress={() => setTimeModalVisible(false)} textColor="#6b7280">
-              취소
-            </Button>
-            <Button mode="contained" onPress={confirmTimeModal}>
-              확인
-            </Button>
+      {/* OS 기본 시간 피커 — Android */}
+      {timePickerVisible && Platform.OS === 'android' && (
+        <DateTimePicker
+          mode="time"
+          display="default"
+          value={timeStringToDate(pendingTime)}
+          onChange={handleTimeChange}
+          minuteInterval={30}
+        />
+      )}
+
+      {/* OS 기본 시간 피커 — iOS sheet */}
+      {timePickerVisible && Platform.OS === 'ios' && (
+        <View style={styles.iosPickerOverlay}>
+          <View style={styles.iosPickerContainer}>
+            <View style={styles.pickerHeader}>
+              <TouchableOpacity onPress={cancelTimePicker}>
+                <Text style={styles.pickerCancel}>취소</Text>
+              </TouchableOpacity>
+              <Text style={styles.pickerTitle}>
+                {editingTimeField === 'start' ? '시작 시간' : '종료 시간'}
+              </Text>
+              <TouchableOpacity onPress={confirmTimePicker}>
+                <Text style={styles.pickerConfirm}>확인</Text>
+              </TouchableOpacity>
+            </View>
+            <DateTimePicker
+              mode="time"
+              display="spinner"
+              value={timeStringToDate(pendingTime)}
+              onChange={handleTimeChange}
+              minuteInterval={30}
+              locale="ko_KR"
+              style={{ width: '100%' }}
+            />
           </View>
-        </Modal>
-      </Portal>
+        </View>
+      )}
     </View>
   );
 }
@@ -293,10 +325,51 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     paddingRight: 4,
   },
+  editBtn: {
+    alignSelf: 'center',
+    paddingHorizontal: 8,
+  },
   modal: {
     backgroundColor: '#fff',
     marginHorizontal: 24,
     borderRadius: 16,
     padding: 24,
+  },
+  iosPickerOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    top: 0,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  iosPickerContainer: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingBottom: 20,
+  },
+  pickerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  pickerCancel: {
+    fontSize: 17,
+    color: '#8E8E93',
+  },
+  pickerTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#1C1C1E',
+  },
+  pickerConfirm: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#3B82F6',
   },
 });
