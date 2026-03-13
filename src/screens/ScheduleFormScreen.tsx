@@ -1,16 +1,26 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
-  Text,
-  TextInput,
-  TouchableOpacity,
   ScrollView,
-  Modal,
   FlatList,
   Alert,
   KeyboardAvoidingView,
   Platform,
+  StyleSheet,
+  TouchableOpacity,
 } from 'react-native';
+import {
+  Text,
+  TextInput,
+  Button,
+  Chip,
+  Switch,
+  Portal,
+  Modal,
+  Divider,
+  SegmentedButtons,
+  Surface,
+} from 'react-native-paper';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../navigation/RootNavigator';
@@ -30,7 +40,12 @@ const PASTEL_COLORS = [
   '#FFD6BA', '#B5EAD7',
 ];
 
-const NOTIFICATION_OPTIONS: Array<5 | 10 | 15 | 30> = [5, 10, 15, 30];
+const NOTIFICATION_OPTIONS = [
+  { value: '5', label: '5분 전' },
+  { value: '10', label: '10분 전' },
+  { value: '15', label: '15분 전' },
+  { value: '30', label: '30분 전' },
+];
 
 const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
 const MINUTES = ['00', '10', '20', '30', '40', '50'];
@@ -57,7 +72,6 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
     schedule?.notification?.minutesBefore ?? 10,
   );
 
-  // 시간 피커 모달
   const [timePickerVisible, setTimePickerVisible] = useState(false);
   const [editingTime, setEditingTime] = useState<'start' | 'end'>('start');
   const [pickerHour, setPickerHour] = useState('09');
@@ -74,11 +88,8 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
 
   function confirmTimePicker() {
     const result = `${pickerHour}:${pickerMinute}`;
-    if (editingTime === 'start') {
-      setStartTime(result);
-    } else {
-      setEndTime(result);
-    }
+    if (editingTime === 'start') setStartTime(result);
+    else setEndTime(result);
     setTimePickerVisible(false);
   }
 
@@ -151,121 +162,119 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
   }
 
   return (
-    <View className="flex-1 bg-white">
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
       {/* 헤더 */}
-      <View className="flex-row items-center justify-between px-4 pt-14 pb-3 border-b border-gray-100">
-        <TouchableOpacity onPress={() => navigation.goBack()} className="w-12">
-          <Text className="text-base text-gray-500">취소</Text>
-        </TouchableOpacity>
-        <Text className="text-base font-semibold text-gray-900">
+      <View style={styles.header}>
+        <Button onPress={() => navigation.goBack()} textColor="#6b7280">
+          취소
+        </Button>
+        <Text variant="titleMedium" style={{ fontWeight: '600' }}>
           {isEditing ? '일정 편집' : '일정 추가'}
         </Text>
-        <TouchableOpacity onPress={handleSave} className="w-12 items-end">
-          <Text className="text-base font-semibold text-blue-500">저장</Text>
-        </TouchableOpacity>
+        <Button mode="contained" onPress={handleSave} compact>
+          저장
+        </Button>
       </View>
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        className="flex-1"
+        style={{ flex: 1 }}
       >
         <ScrollView
-          className="flex-1"
+          style={{ flex: 1 }}
           contentContainerStyle={{ paddingBottom: 40 }}
           keyboardShouldPersistTaps="handled"
         >
-          {/* 제목 */}
-          <View className="mx-4 mt-5 mb-1">
-            <Text className="text-xs font-medium text-gray-400 mb-1 ml-1">제목 *</Text>
+          {/* 제목 / 장소 */}
+          <View style={styles.section}>
             <TextInput
-              className="bg-gray-50 rounded-xl px-4 py-3 text-base text-gray-900 border border-gray-200"
-              placeholder="예) 수학, 영어"
-              placeholderTextColor="#9ca3af"
+              label="제목 *"
+              mode="outlined"
               value={title}
               onChangeText={setTitle}
+              placeholder="예) 수학, 영어"
               returnKeyType="next"
+              style={styles.input}
             />
-          </View>
-
-          {/* 부제/장소 */}
-          <View className="mx-4 mb-1">
-            <Text className="text-xs font-medium text-gray-400 mb-1 ml-1">장소/부제</Text>
             <TextInput
-              className="bg-gray-50 rounded-xl px-4 py-3 text-base text-gray-900 border border-gray-200"
-              placeholder="예) 302호"
-              placeholderTextColor="#9ca3af"
+              label="장소 / 부제"
+              mode="outlined"
               value={subTitle}
               onChangeText={setSubTitle}
+              placeholder="예) 302호"
               returnKeyType="next"
+              style={[styles.input, { marginTop: 8 }]}
             />
           </View>
 
-          {/* 요일 선택 */}
-          <View className="mx-4 mt-4 mb-1">
-            <Text className="text-xs font-medium text-gray-400 mb-2 ml-1">반복 요일</Text>
-            <View className="flex-row gap-2">
+          <Divider />
+
+          {/* 반복 요일 */}
+          <View style={styles.section}>
+            <Text variant="labelMedium" style={styles.sectionLabel}>반복 요일</Text>
+            <View style={styles.chipRow}>
               {DAYS.map((day, i) => (
-                <TouchableOpacity
+                <Chip
                   key={day}
+                  selected={selectedDays.includes(i)}
                   onPress={() => toggleDay(i)}
-                  className={`flex-1 h-9 rounded-xl items-center justify-center border ${
-                    selectedDays.includes(i)
-                      ? 'bg-blue-500 border-blue-500'
-                      : 'bg-gray-50 border-gray-200'
-                  }`}
+                  mode="outlined"
+                  style={styles.chip}
+                  compact
                 >
-                  <Text
-                    className={`text-sm font-semibold ${
-                      selectedDays.includes(i) ? 'text-white' : 'text-gray-600'
-                    }`}
-                  >
-                    {day}
-                  </Text>
-                </TouchableOpacity>
+                  {day}
+                </Chip>
               ))}
             </View>
           </View>
 
+          <Divider />
+
           {/* 시간 */}
-          <View className="mx-4 mt-4 mb-1">
-            <Text className="text-xs font-medium text-gray-400 mb-2 ml-1">시간</Text>
-            <View className="flex-row items-center gap-3">
-              <TouchableOpacity
-                onPress={() => openTimePicker('start')}
-                className="flex-1 bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 items-center"
-              >
-                <Text className="text-xs text-gray-400 mb-0.5">시작</Text>
-                <Text className="text-lg font-semibold text-gray-900">{startTime}</Text>
-              </TouchableOpacity>
-              <Text className="text-gray-300 text-xl">→</Text>
-              <TouchableOpacity
-                onPress={() => openTimePicker('end')}
-                className="flex-1 bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 items-center"
-              >
-                <Text className="text-xs text-gray-400 mb-0.5">종료</Text>
-                <Text className="text-lg font-semibold text-gray-900">{endTime}</Text>
-              </TouchableOpacity>
+          <View style={styles.section}>
+            <Text variant="labelMedium" style={styles.sectionLabel}>시간</Text>
+            <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+              <Surface style={styles.timeSurface} elevation={0}>
+                <Button
+                  mode="outlined"
+                  onPress={() => openTimePicker('start')}
+                  contentStyle={{ flexDirection: 'column', height: 56 }}
+                  style={{ flex: 1 }}
+                >
+                  <Text variant="labelSmall" style={{ color: '#9ca3af' }}>시작{'\n'}</Text>
+                  <Text variant="titleMedium">{startTime}</Text>
+                </Button>
+              </Surface>
+              <Text variant="titleLarge" style={{ color: '#d1d5db' }}>→</Text>
+              <Surface style={styles.timeSurface} elevation={0}>
+                <Button
+                  mode="outlined"
+                  onPress={() => openTimePicker('end')}
+                  contentStyle={{ flexDirection: 'column', height: 56 }}
+                  style={{ flex: 1 }}
+                >
+                  <Text variant="labelSmall" style={{ color: '#9ca3af' }}>종료{'\n'}</Text>
+                  <Text variant="titleMedium">{endTime}</Text>
+                </Button>
+              </Surface>
             </View>
           </View>
 
-          {/* 색상 선택 */}
-          <View className="mx-4 mt-4 mb-1">
-            <Text className="text-xs font-medium text-gray-400 mb-2 ml-1">색상</Text>
-            <View className="flex-row flex-wrap gap-3">
+          <Divider />
+
+          {/* 색상 */}
+          <View style={styles.section}>
+            <Text variant="labelMedium" style={styles.sectionLabel}>색상</Text>
+            <View style={styles.chipRow}>
               {PASTEL_COLORS.map(c => (
                 <TouchableOpacity
                   key={c}
                   onPress={() => setColor(c)}
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 18,
-                    backgroundColor: c,
-                    borderWidth: color === c ? 3 : 0,
-                    borderColor: '#3b82f6',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
+                  style={[
+                    styles.colorCircle,
+                    { backgroundColor: c },
+                    color === c && styles.colorCircleSelected,
+                  ]}
                 >
                   {color === c && (
                     <Text style={{ fontSize: 14, color: '#1f2937' }}>✓</Text>
@@ -275,182 +284,191 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
             </View>
           </View>
 
+          <Divider />
+
           {/* 메모 */}
-          <View className="mx-4 mt-4 mb-1">
-            <Text className="text-xs font-medium text-gray-400 mb-1 ml-1">메모</Text>
+          <View style={styles.section}>
             <TextInput
-              className="bg-gray-50 rounded-xl px-4 py-3 text-base text-gray-900 border border-gray-200"
-              placeholder="메모를 입력하세요"
-              placeholderTextColor="#9ca3af"
+              label="메모"
+              mode="outlined"
               value={memo}
               onChangeText={setMemo}
+              placeholder="메모를 입력하세요"
               multiline
               numberOfLines={3}
-              textAlignVertical="top"
-              style={{ minHeight: 72 }}
+              style={[styles.input, { minHeight: 80 }]}
             />
           </View>
 
-          {/* 알림 설정 */}
-          <View className="mx-4 mt-4 mb-1">
-            <View className="flex-row items-center justify-between mb-2">
-              <Text className="text-xs font-medium text-gray-400 ml-1">알림</Text>
-              <TouchableOpacity
-                onPress={() => setNotifEnabled(v => !v)}
-                className={`w-12 h-6 rounded-full px-0.5 justify-center ${
-                  notifEnabled ? 'bg-blue-500' : 'bg-gray-300'
-                }`}
-              >
-                <View
-                  className={`w-5 h-5 rounded-full bg-white shadow ${
-                    notifEnabled ? 'self-end' : 'self-start'
-                  }`}
-                />
-              </TouchableOpacity>
+          <Divider />
+
+          {/* 알림 */}
+          <View style={styles.section}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <Text variant="labelMedium" style={styles.sectionLabel}>알림</Text>
+              <Switch value={notifEnabled} onValueChange={setNotifEnabled} />
             </View>
             {notifEnabled && (
-              <View className="flex-row gap-2">
-                {NOTIFICATION_OPTIONS.map(min => (
-                  <TouchableOpacity
-                    key={min}
-                    onPress={() => setNotifMinutes(min)}
-                    className={`flex-1 py-2 rounded-xl border items-center ${
-                      notifMinutes === min
-                        ? 'bg-blue-500 border-blue-500'
-                        : 'bg-gray-50 border-gray-200'
-                    }`}
-                  >
-                    <Text
-                      className={`text-sm font-medium ${
-                        notifMinutes === min ? 'text-white' : 'text-gray-600'
-                      }`}
-                    >
-                      {min}분 전
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+              <SegmentedButtons
+                value={String(notifMinutes)}
+                onValueChange={v => setNotifMinutes(Number(v) as 5 | 10 | 15 | 30)}
+                buttons={NOTIFICATION_OPTIONS}
+              />
             )}
           </View>
 
           {/* 삭제 버튼 (편집 모드) */}
           {isEditing && (
-            <TouchableOpacity
-              onPress={handleDelete}
-              className="mx-4 mt-8 py-3 rounded-xl border border-red-200 items-center"
-            >
-              <Text className="text-red-500 font-semibold">일정 삭제</Text>
-            </TouchableOpacity>
+            <View style={[styles.section, { paddingTop: 8 }]}>
+              <Button
+                mode="outlined"
+                onPress={handleDelete}
+                textColor="#ef4444"
+                style={{ borderColor: '#fca5a5' }}
+              >
+                일정 삭제
+              </Button>
+            </View>
           )}
         </ScrollView>
       </KeyboardAvoidingView>
 
       {/* 시간 피커 모달 */}
-      <Modal
-        visible={timePickerVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setTimePickerVisible(false)}
-      >
-        <View className="flex-1 justify-end">
-          {/* 딤 배경 */}
-          <TouchableOpacity
-            className="flex-1"
-            onPress={() => setTimePickerVisible(false)}
-          />
-          <View className="bg-white rounded-t-3xl px-4 pb-8 pt-4">
-            {/* 모달 헤더 */}
-            <View className="flex-row justify-between items-center mb-4">
-              <TouchableOpacity onPress={() => setTimePickerVisible(false)}>
-                <Text className="text-base text-gray-500">취소</Text>
-              </TouchableOpacity>
-              <Text className="text-base font-semibold text-gray-900">
-                {editingTime === 'start' ? '시작 시간' : '종료 시간'}
-              </Text>
-              <TouchableOpacity onPress={confirmTimePicker}>
-                <Text className="text-base font-semibold text-blue-500">확인</Text>
-              </TouchableOpacity>
+      <Portal>
+        <Modal
+          visible={timePickerVisible}
+          onDismiss={() => setTimePickerVisible(false)}
+          contentContainerStyle={styles.modalContainer}
+        >
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <Button onPress={() => setTimePickerVisible(false)} textColor="#6b7280">취소</Button>
+            <Text variant="titleMedium">
+              {editingTime === 'start' ? '시작 시간' : '종료 시간'}
+            </Text>
+            <Button mode="contained" onPress={confirmTimePicker} compact>확인</Button>
+          </View>
+
+          <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
+            {/* 시 */}
+            <View style={{ flex: 1, height: 200 }}>
+              <FlatList
+                data={HOURS}
+                keyExtractor={item => item}
+                showsVerticalScrollIndicator={false}
+                snapToInterval={44}
+                decelerationRate="fast"
+                initialScrollIndex={parseInt(pickerHour, 10)}
+                getItemLayout={(_, index) => ({ length: 44, offset: 44 * index, index })}
+                onMomentumScrollEnd={e => {
+                  const index = Math.round(e.nativeEvent.contentOffset.y / 44);
+                  setPickerHour(HOURS[Math.min(index, 23)]);
+                }}
+                renderItem={({ item }) => (
+                  <View style={styles.pickerItem}>
+                    <Text
+                      variant="headlineSmall"
+                      style={{ color: item === pickerHour ? '#111827' : '#d1d5db', fontWeight: item === pickerHour ? '700' : '400' }}
+                    >
+                      {item}
+                    </Text>
+                  </View>
+                )}
+                contentContainerStyle={{ paddingVertical: 78 }}
+              />
             </View>
 
-            {/* 시:분 선택 */}
-            <View className="flex-row justify-center items-center gap-2">
-              {/* 시 */}
-              <View className="flex-1" style={{ height: 200 }}>
-                <FlatList
-                  data={HOURS}
-                  keyExtractor={item => item}
-                  showsVerticalScrollIndicator={false}
-                  snapToInterval={44}
-                  decelerationRate="fast"
-                  initialScrollIndex={parseInt(pickerHour, 10)}
-                  getItemLayout={(_, index) => ({
-                    length: 44,
-                    offset: 44 * index,
-                    index,
-                  })}
-                  onMomentumScrollEnd={e => {
-                    const index = Math.round(e.nativeEvent.contentOffset.y / 44);
-                    setPickerHour(HOURS[Math.min(index, 23)]);
-                  }}
-                  renderItem={({ item }) => (
-                    <View
-                      className="h-11 items-center justify-center"
+            <Text variant="headlineMedium" style={{ fontWeight: '700', color: '#111827' }}>:</Text>
+
+            {/* 분 */}
+            <View style={{ flex: 1, height: 200 }}>
+              <FlatList
+                data={MINUTES}
+                keyExtractor={item => item}
+                showsVerticalScrollIndicator={false}
+                snapToInterval={44}
+                decelerationRate="fast"
+                initialScrollIndex={MINUTES.indexOf(pickerMinute)}
+                getItemLayout={(_, index) => ({ length: 44, offset: 44 * index, index })}
+                onMomentumScrollEnd={e => {
+                  const index = Math.round(e.nativeEvent.contentOffset.y / 44);
+                  setPickerMinute(MINUTES[Math.min(index, MINUTES.length - 1)]);
+                }}
+                renderItem={({ item }) => (
+                  <View style={styles.pickerItem}>
+                    <Text
+                      variant="headlineSmall"
+                      style={{ color: item === pickerMinute ? '#111827' : '#d1d5db', fontWeight: item === pickerMinute ? '700' : '400' }}
                     >
-                      <Text
-                        className={`text-2xl ${
-                          item === pickerHour
-                            ? 'font-bold text-gray-900'
-                            : 'text-gray-300'
-                        }`}
-                      >
-                        {item}
-                      </Text>
-                    </View>
-                  )}
-                  contentContainerStyle={{ paddingVertical: 78 }}
-                />
-              </View>
-
-              <Text className="text-3xl font-bold text-gray-900">:</Text>
-
-              {/* 분 */}
-              <View className="flex-1" style={{ height: 200 }}>
-                <FlatList
-                  data={MINUTES}
-                  keyExtractor={item => item}
-                  showsVerticalScrollIndicator={false}
-                  snapToInterval={44}
-                  decelerationRate="fast"
-                  initialScrollIndex={MINUTES.indexOf(pickerMinute)}
-                  getItemLayout={(_, index) => ({
-                    length: 44,
-                    offset: 44 * index,
-                    index,
-                  })}
-                  onMomentumScrollEnd={e => {
-                    const index = Math.round(e.nativeEvent.contentOffset.y / 44);
-                    setPickerMinute(MINUTES[Math.min(index, MINUTES.length - 1)]);
-                  }}
-                  renderItem={({ item }) => (
-                    <View className="h-11 items-center justify-center">
-                      <Text
-                        className={`text-2xl ${
-                          item === pickerMinute
-                            ? 'font-bold text-gray-900'
-                            : 'text-gray-300'
-                        }`}
-                      >
-                        {item}
-                      </Text>
-                    </View>
-                  )}
-                  contentContainerStyle={{ paddingVertical: 78 }}
-                />
-              </View>
+                      {item}
+                    </Text>
+                  </View>
+                )}
+                contentContainerStyle={{ paddingVertical: 78 }}
+              />
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+      </Portal>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+    paddingTop: 16,
+    paddingBottom: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#e5e7eb',
+  },
+  section: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  sectionLabel: {
+    color: '#6b7280',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  input: {
+    backgroundColor: '#fff',
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    marginBottom: 2,
+  },
+  timeSurface: {
+    flex: 1,
+    borderRadius: 12,
+  },
+  colorCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  colorCircleSelected: {
+    borderWidth: 3,
+    borderColor: '#3b82f6',
+  },
+  modalContainer: {
+    backgroundColor: '#fff',
+    marginHorizontal: 20,
+    borderRadius: 20,
+    padding: 20,
+  },
+  pickerItem: {
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

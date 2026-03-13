@@ -35,7 +35,7 @@ export default function RootNavigator() {
       <Stack.Screen
         name="Settings"
         component={SettingsScreen}
-        options={{ title: '설정' }}
+        options={{ title: '설정', headerBackTitle: '뒤로' }}
       />
     </Stack.Navigator>
   );
