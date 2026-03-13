@@ -132,11 +132,13 @@ export default function SettingsScreen({ navigation, route }: Props) {
           text: '삭제',
           style: 'destructive',
           onPress: () => {
+            const currentIndex = timetables.findIndex(t => t.id === timetableId);
+            const newActiveIndex = Math.max(0, currentIndex - 1);
             const updated = timetables
               .filter(t => t.id !== timetableId)
               .map((t, i) => ({ ...t, order: i }));
             saveTimetables(updated);
-            navigation.goBack();
+            navigation.navigate('Main', { activeIndex: newActiveIndex });
           },
         },
       ],

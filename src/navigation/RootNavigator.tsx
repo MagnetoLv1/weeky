@@ -6,7 +6,7 @@ import SettingsScreen from '../screens/SettingsScreen';
 import type { Schedule } from '../types';
 
 export type RootStackParamList = {
-  Main: undefined;
+  Main: { activeIndex?: number } | undefined;
   ScheduleForm: {
     schedule?: Schedule;
     timetableId?: string;

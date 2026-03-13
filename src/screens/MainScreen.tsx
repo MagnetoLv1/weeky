@@ -2,10 +2,13 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   Pressable,
   Dimensions,
+  StyleSheet,
 } from 'react-native';
+import { Portal, Modal, Button } from 'react-native-paper';
 import { ChevronLeft, ChevronRight, Plus, Settings as SettingsIcon } from 'lucide-react-native';
 import Animated, {
   useSharedValue,
@@ -19,6 +22,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
+import type { RouteProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { getTimetables, saveTimetables } from '../store/timetableStore';
 import type { Timetable, Schedule } from '../types';
@@ -26,6 +30,7 @@ import { timeToMinutes, minutesToTime } from '../utils/time';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Main'>;
+  route: RouteProp<RootStackParamList, 'Main'>;
 };
 
 const ALL_DAYS = ['월', '화', '수', '목', '금', '토', '일'];
@@ -199,11 +204,13 @@ function DraggableScheduleBlock({
 }
 
 // ── 메인 화면 ──────────────────────────────────────────────────
-export default function MainScreen({ navigation }: Props) {
+export default function MainScreen({ navigation, route }: Props) {
   const [timetables, setTimetables] = useState<Timetable[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [zoomedDay, setZoomedDay] = useState<number | null>(null);
   const [isDraggingSchedule, setIsDraggingSchedule] = useState(false);
+  const [addModalVisible, setAddModalVisible] = useState(false);
+  const [newTimetableName, setNewTimetableName] = useState('');
   const [nowMin, setNowMin] = useState(() => {
     const n = new Date();
     return n.getHours() * 60 + n.getMinutes();
@@ -247,7 +254,11 @@ export default function MainScreen({ navigation }: Props) {
   useFocusEffect(
     useCallback(() => {
       setTimetables(getTimetables());
-    }, []),
+      const idx = route.params?.activeIndex;
+      if (idx !== undefined) {
+        setActiveIndex(idx);
+      }
+    }, [route.params?.activeIndex]),
   );
 
   const activeTimetable = timetables[activeIndex];
@@ -397,15 +408,23 @@ export default function MainScreen({ navigation }: Props) {
   }
 
   function handleAddTimetable() {
+    setNewTimetableName(`시간표 ${timetables.length + 1}`);
+    setAddModalVisible(true);
+  }
+
+  function confirmAddTimetable() {
+    const name = newTimetableName.trim();
+    if (!name) return;
     const newTt: Timetable = {
       id: Date.now().toString(),
-      name: `시간표 ${timetables.length + 1}`,
+      name,
       order: timetables.length,
       schedules: [],
     };
     const updated = [...timetables, newTt];
     saveTimetables(updated);
     setTimetables(updated);
+    setAddModalVisible(false);
     translateX.value = SCREEN_WIDTH;
     setActiveIndex(updated.length - 1);
     translateX.value = withTiming(0, { duration: SLIDE_DURATION });
@@ -657,6 +676,67 @@ export default function MainScreen({ navigation }: Props) {
           </View>
         </Animated.ScrollView>
       </Animated.View>
+
+      {/* 시간표 추가 모달 */}
+      <Portal>
+        <Modal
+          visible={addModalVisible}
+          onDismiss={() => setAddModalVisible(false)}
+          contentContainerStyle={styles.modal}
+        >
+          <Text style={styles.modalTitle}>새 시간표</Text>
+          <TextInput
+            style={styles.modalInput}
+            value={newTimetableName}
+            onChangeText={setNewTimetableName}
+            placeholder="시간표 이름"
+            placeholderTextColor="#C7C7CC"
+            autoFocus
+            selectTextOnFocus
+            onSubmitEditing={confirmAddTimetable}
+            returnKeyType="done"
+          />
+          <View style={styles.modalButtons}>
+            <Button onPress={() => setAddModalVisible(false)} textColor="#6b7280">
+              취소
+            </Button>
+            <Button mode="contained" onPress={confirmAddTimetable}>
+              추가
+            </Button>
+          </View>
+        </Modal>
+      </Portal>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  modal: {
+    backgroundColor: '#fff',
+    marginHorizontal: 32,
+    borderRadius: 16,
+    padding: 24,
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#1C1C1E',
+    marginBottom: 16,
+  },
+  modalInput: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#E5E5EA',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    color: '#1C1C1E',
+    backgroundColor: '#F2F2F7',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+    marginTop: 16,
+  },
+});
