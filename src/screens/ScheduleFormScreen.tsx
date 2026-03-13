@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Switch, Portal, Modal } from 'react-native-paper';
+import { Check, ChevronRight } from 'lucide-react-native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../navigation/RootNavigator';
@@ -275,7 +276,10 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
               <Text style={styles.rowLabel}>색상</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <View style={[styles.colorDot, { backgroundColor: color }]} />
-                <Text style={styles.rowValueGray}>선택됨  ›</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                  <Text style={styles.rowValueGray}>선택됨</Text>
+                  <ChevronRight size={16} color="#8E8E93" />
+                </View>
               </View>
             </TouchableOpacity>
             {showColorPicker && (
@@ -292,7 +296,7 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
                         color === c && styles.colorCircleSelected,
                       ]}
                     >
-                      {color === c && <Text style={{ fontSize: 14 }}>✓</Text>}
+                      {color === c && <Check size={14} color="#1f2937" />}
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -320,7 +324,10 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
                   onPress={() => setShowNotifPicker(v => !v)}
                 >
                   <Text style={styles.rowLabel}>시간</Text>
-                  <Text style={styles.rowValueGray}>{notifValueLabel}  ›</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                    <Text style={styles.rowValueGray}>{notifValueLabel}</Text>
+                    <ChevronRight size={16} color="#8E8E93" />
+                  </View>
                 </TouchableOpacity>
                 {showNotifPicker && (
                   <>

@@ -7,6 +7,7 @@ import {
   Pressable,
   Dimensions,
 } from 'react-native';
+import { Bell, ChevronLeft, ChevronRight, Plus, Settings as SettingsIcon } from 'lucide-react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -220,11 +221,11 @@ export default function MainScreen({ navigation }: Props) {
           {/* 타이틀 + 스와이프 영역 */}
           <GestureDetector gesture={panGesture}>
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingVertical: 4, gap: 6 }}>
-              <Text style={{ fontSize: 12, color: activeIndex > 0 ? '#9ca3af' : 'transparent' }}>‹</Text>
+              <ChevronLeft size={16} color={activeIndex > 0 ? '#9ca3af' : 'transparent'} />
               <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827' }}>
                 {activeTimetable?.name ?? '시간표'}
               </Text>
-              <Text style={{ fontSize: 12, color: activeIndex < timetables.length - 1 ? '#9ca3af' : 'transparent' }}>›</Text>
+              <ChevronRight size={16} color={activeIndex < timetables.length - 1 ? '#9ca3af' : 'transparent'} />
               {timetables.length > 1 && (
                 <View style={{ flexDirection: 'row', gap: 3, marginLeft: 2 }}>
                   {timetables.map((_, i) => (
@@ -257,13 +258,13 @@ export default function MainScreen({ navigation }: Props) {
               style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}
               onPress={handleAddTimetable}
             >
-              <Text style={{ fontSize: 20, color: '#9ca3af', lineHeight: 24 }}>+</Text>
+              <Plus size={20} color="#9ca3af" />
             </TouchableOpacity>
             <TouchableOpacity
               style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}
               onPress={() => navigation.navigate('Settings')}
             >
-              <Text style={{ fontSize: 18 }}>⚙️</Text>
+              <SettingsIcon size={18} color="#6b7280" />
             </TouchableOpacity>
           </View>
         </View>
@@ -383,7 +384,7 @@ export default function MainScreen({ navigation }: Props) {
                           </Text>
                         ) : null}
                         {schedule.notification?.enabled ? (
-                          <Text style={{ fontSize: 8 }}>🔔</Text>
+                          <Bell size={8} color="#1f2937" />
                         ) : null}
                       </Pressable>
                     );
