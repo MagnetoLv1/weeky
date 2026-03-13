@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,8 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
-import { Switch, Portal, Modal } from 'react-native-paper';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Switch } from 'react-native-paper';
 import { Check, ChevronRight } from 'lucide-react-native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
@@ -30,9 +31,6 @@ const PASTEL_COLORS = [
   '#9BF6FF', '#BDB2FF', '#FFC6FF', '#A0C4FF',
   '#FFD6BA', '#B5EAD7',
 ];
-
-const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
-const MINUTES = ['00', '10', '20', '30', '40', '50'];
 
 const NOTIF_LABELS: Record<number, string> = {
   5: '5분 전',
@@ -75,39 +73,35 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
   const [showNotifPicker, setShowNotifPicker] = useState(false);
 
   // 시간 피커
-  const ITEM_H = 44;
   const [timePickerVisible, setTimePickerVisible] = useState(false);
   const [editingTime, setEditingTime] = useState<'start' | 'end'>('start');
-  const [pickerHour, setPickerHour] = useState('09');
-  const [pickerMinute, setPickerMinute] = useState('00');
-  const hourScrollRef = useRef<ScrollView>(null);
-  const minuteScrollRef = useRef<ScrollView>(null);
 
-  // 모달이 열릴 때 선택된 시/분 위치로 스크롤
-  useEffect(() => {
-    if (!timePickerVisible) return;
-    const hIdx = parseInt(pickerHour, 10);
-    const mIdx = MINUTES.indexOf(pickerMinute);
-    setTimeout(() => {
-      hourScrollRef.current?.scrollTo({ y: hIdx * ITEM_H, animated: false });
-      minuteScrollRef.current?.scrollTo({ y: mIdx * ITEM_H, animated: false });
-    }, 50);
-  }, [timePickerVisible]);
+  function timeStringToDate(time: string): Date {
+    const [h, m] = time.split(':').map(Number);
+    const d = new Date();
+    d.setHours(h, m, 0, 0);
+    return d;
+  }
+
+  function dateToTimeString(date: Date): string {
+    const h = String(date.getHours()).padStart(2, '0');
+    const m = String(date.getMinutes()).padStart(2, '0');
+    return `${h}:${m}`;
+  }
 
   function openTimePicker(type: 'start' | 'end') {
-    const time = type === 'start' ? startTime : endTime;
-    const [h, m] = time.split(':');
-    setPickerHour(h);
-    setPickerMinute(m);
     setEditingTime(type);
     setTimePickerVisible(true);
   }
 
-  function confirmTimePicker() {
-    const result = `${pickerHour}:${pickerMinute}`;
-    if (editingTime === 'start') setStartTime(result);
-    else setEndTime(result);
-    setTimePickerVisible(false);
+  function handleTimeChange(_: unknown, selectedDate?: Date) {
+    if (Platform.OS === 'android') {
+      setTimePickerVisible(false);
+    }
+    if (!selectedDate) return;
+    const timeStr = dateToTimeString(selectedDate);
+    if (editingTime === 'start') setStartTime(timeStr);
+    else setEndTime(timeStr);
   }
 
   function toggleDay(index: number) {
@@ -392,79 +386,42 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* ── 시간 피커 모달 ── */}
-      <Portal>
-        <Modal
-          visible={timePickerVisible}
-          onDismiss={() => setTimePickerVisible(false)}
-          contentContainerStyle={styles.modal}
-        >
-          <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setTimePickerVisible(false)}>
-              <Text style={styles.modalCancel}>취소</Text>
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>
-              {editingTime === 'start' ? '시작 시간' : '종료 시간'}
-            </Text>
-            <TouchableOpacity onPress={confirmTimePicker}>
-              <Text style={styles.modalConfirm}>확인</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* 선택 중앙 하이라이트 바 */}
-          <View style={styles.pickerHighlight} pointerEvents="none" />
-
-          <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
-            {/* 시 */}
-            <View style={{ flex: 1, height: 220, overflow: 'hidden' }}>
-              <ScrollView
-                ref={hourScrollRef}
-                showsVerticalScrollIndicator={false}
-                snapToInterval={ITEM_H}
-                decelerationRate="fast"
-                onMomentumScrollEnd={e => {
-                  const index = Math.round(e.nativeEvent.contentOffset.y / ITEM_H);
-                  setPickerHour(HOURS[Math.min(Math.max(index, 0), 23)]);
-                }}
-                contentContainerStyle={{ paddingVertical: (220 / 2) - (ITEM_H / 2) }}
-              >
-                {HOURS.map(item => (
-                  <View key={item} style={styles.pickerItem}>
-                    <Text style={[styles.pickerText, item === pickerHour && styles.pickerTextSelected]}>
-                      {item}
-                    </Text>
-                  </View>
-                ))}
-              </ScrollView>
+      {/* ── OS 기본 시간 피커 ── */}
+      {timePickerVisible && Platform.OS === 'android' && (
+        <DateTimePicker
+          mode="time"
+          display="default"
+          value={timeStringToDate(editingTime === 'start' ? startTime : endTime)}
+          onChange={handleTimeChange}
+          minuteInterval={10}
+        />
+      )}
+      {timePickerVisible && Platform.OS === 'ios' && (
+        <View style={styles.iosPickerOverlay}>
+          <View style={styles.iosPickerContainer}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setTimePickerVisible(false)}>
+                <Text style={styles.modalCancel}>취소</Text>
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>
+                {editingTime === 'start' ? '시작 시간' : '종료 시간'}
+              </Text>
+              <TouchableOpacity onPress={() => setTimePickerVisible(false)}>
+                <Text style={styles.modalConfirm}>확인</Text>
+              </TouchableOpacity>
             </View>
-
-            <Text style={styles.pickerColon}>:</Text>
-
-            {/* 분 */}
-            <View style={{ flex: 1, height: 220, overflow: 'hidden' }}>
-              <ScrollView
-                ref={minuteScrollRef}
-                showsVerticalScrollIndicator={false}
-                snapToInterval={ITEM_H}
-                decelerationRate="fast"
-                onMomentumScrollEnd={e => {
-                  const index = Math.round(e.nativeEvent.contentOffset.y / ITEM_H);
-                  setPickerMinute(MINUTES[Math.min(Math.max(index, 0), MINUTES.length - 1)]);
-                }}
-                contentContainerStyle={{ paddingVertical: (220 / 2) - (ITEM_H / 2) }}
-              >
-                {MINUTES.map(item => (
-                  <View key={item} style={styles.pickerItem}>
-                    <Text style={[styles.pickerText, item === pickerMinute && styles.pickerTextSelected]}>
-                      {item}
-                    </Text>
-                  </View>
-                ))}
-              </ScrollView>
-            </View>
+            <DateTimePicker
+              mode="time"
+              display="spinner"
+              value={timeStringToDate(editingTime === 'start' ? startTime : endTime)}
+              onChange={handleTimeChange}
+              minuteInterval={10}
+              locale="ko_KR"
+              style={{ width: '100%' }}
+            />
           </View>
-        </Modal>
-      </Portal>
+        </View>
+      )}
     </View>
   );
 }
@@ -667,18 +624,29 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: '#FF3B30',
   },
-  // ── 시간 피커 모달 ──
-  modal: {
+  // ── iOS 시간 피커 ──
+  iosPickerOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    top: 0,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  iosPickerContainer: {
     backgroundColor: '#FFFFFF',
-    marginHorizontal: 20,
-    borderRadius: 16,
-    padding: 20,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingBottom: 20,
   },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 8,
   },
   modalCancel: {
     fontSize: 17,
@@ -693,35 +661,5 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     color: IOS_BLUE,
-  },
-  pickerItem: {
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pickerText: {
-    fontSize: 24,
-    color: '#D1D5DB',
-    fontWeight: '400',
-  },
-  pickerTextSelected: {
-    color: IOS_LABEL,
-    fontWeight: '700',
-  },
-  pickerColon: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: IOS_LABEL,
-  },
-  pickerHighlight: {
-    position: 'absolute',
-    left: 20,
-    right: 20,
-    top: '50%',
-    height: 44,
-    marginTop: 16, // modalHeader 높이 보정
-    backgroundColor: '#F2F2F7',
-    borderRadius: 8,
-    zIndex: 0,
   },
 });
