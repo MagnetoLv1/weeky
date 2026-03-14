@@ -48,6 +48,7 @@ import type { RootStackParamList } from '../navigation/RootNavigator';
 import { getTimetables, saveTimetables } from '../store/timetableStore';
 import type { Timetable, Schedule } from '../types';
 import { timeToMinutes, minutesToTime } from '../utils/time';
+import { syncScheduleNotifications } from '../utils/notification';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Main'>;
@@ -57,7 +58,6 @@ type Props = {
 const ALL_DAYS = ['월', '화', '수', '목', '금', '토', '일'];
 const TIME_COL_WIDTH = 58;
 const MIN_CELL_HEIGHT = 1.5; // 10분 = 1.5dp
-const HEADER_HEIGHT = 44;
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const ZOOM_DURATION = 250;
 const SLIDE_DURATION = 300;
@@ -132,6 +132,7 @@ function DraggableScheduleBlock({
       prevTop.current = top;
       offsetY.value = 0;
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [top]);
 
   const durationMin =
@@ -501,6 +502,7 @@ export default function MainScreen({ navigation, route }: Props) {
       () => scrollRef.current?.scrollTo({ y: offset, animated: false }),
       100,
     );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timetables.length > 0]); // timetables 첫 로드 시 1회
 
   // 컬럼 너비 업데이트 (줌 상태 변경 시)
@@ -521,6 +523,7 @@ export default function MainScreen({ navigation, route }: Props) {
       }
       colWs[i].value = withTiming(w, { duration: ZOOM_DURATION });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [zoomedDay, numDays, availableWidth]);
 
   // 스와이프 전환 중 인접 시간표 데이터를 프리징하여 깜빡임 방지
@@ -661,6 +664,11 @@ export default function MainScreen({ navigation, route }: Props) {
     saveTimetables(updatedTimetables);
     setTimetables(updatedTimetables);
     triggerHaptic();
+
+    const movedSchedule = updatedSchedules.find(s => s.id === scheduleId);
+    if (movedSchedule) {
+      syncScheduleNotifications(movedSchedule);
+    }
   }
 
   function getBlockStyle(schedule: Schedule) {
@@ -696,7 +704,7 @@ export default function MainScreen({ navigation, route }: Props) {
           quality: 1,
         });
         await Share.open({ url: uri });
-      } catch (_) {
+      } catch {
         // 사용자가 공유 취소
       }
     }

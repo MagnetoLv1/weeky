@@ -18,6 +18,7 @@ import type { RootStackParamList } from '../navigation/RootNavigator';
 import { getTimetables, saveTimetables } from '../store/timetableStore';
 import { generateTimetableHtml } from '../utils/printHtml';
 import type { Timetable } from '../types';
+import { cancelScheduleNotifications } from '../utils/notification';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Settings'>;
@@ -46,7 +47,6 @@ export default function SettingsScreen({ navigation, route }: Props) {
   const [timePickerVisible, setTimePickerVisible] = useState(false);
   const [editingTimeField, setEditingTimeField] = useState<'start' | 'end'>('start');
   const [pendingTime, setPendingTime] = useState('07:00');
-  const [originalTime, setOriginalTime] = useState('07:00');
 
   useFocusEffect(
     useCallback(() => {
@@ -71,7 +71,6 @@ export default function SettingsScreen({ navigation, route }: Props) {
     const current_time = field === 'start' ? ttStart : ttEnd;
     setEditingTimeField(field);
     setPendingTime(current_time);
-    setOriginalTime(current_time);
     setTimePickerVisible(true);
   }
 
@@ -140,6 +139,12 @@ export default function SettingsScreen({ navigation, route }: Props) {
           text: '삭제',
           style: 'destructive',
           onPress: () => {
+            // 삭제될 시간표의 모든 스케줄 알림 취소
+            if (current) {
+              for (const s of current.schedules) {
+                cancelScheduleNotifications(s.id);
+              }
+            }
             const currentIndex = timetables.findIndex(t => t.id === timetableId);
             const newActiveIndex = Math.max(0, currentIndex - 1);
             const updated = timetables

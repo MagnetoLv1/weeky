@@ -19,6 +19,7 @@ import type { RouteProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { getTimetables, saveTimetables } from '../store/timetableStore';
 import type { Schedule } from '../types';
+import { syncScheduleNotifications, cancelScheduleNotifications } from '../utils/notification';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'ScheduleForm'>;
@@ -86,6 +87,7 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
     setTimeout(() => {
       colorScrollRef.current?.scrollTo({ x: scrollX, animated: false });
     }, 50);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const [showNotifPicker, setShowNotifPicker] = useState(false);
@@ -94,7 +96,6 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
   const [timePickerVisible, setTimePickerVisible] = useState(false);
   const [editingTime, setEditingTime] = useState<'start' | 'end'>('start');
   const [pendingTime, setPendingTime] = useState<string>('09:00');
-  const [originalTime, setOriginalTime] = useState<string>('09:00');
 
   function timeStringToDate(time: string): Date {
     const [h, m] = time.split(':').map(Number);
@@ -113,7 +114,6 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
     const current = type === 'start' ? startTime : endTime;
     setEditingTime(type);
     setPendingTime(current);
-    setOriginalTime(current);
     setTimePickerVisible(true);
   }
 
@@ -137,7 +137,6 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
   }
 
   function cancelTimePicker() {
-    // originalTime은 이미 state에 유지되므로 아무 것도 반영하지 않고 닫기
     setTimePickerVisible(false);
   }
 
@@ -186,6 +185,7 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
       return { ...tt, schedules };
     });
     saveTimetables(updated);
+    syncScheduleNotifications(newSchedule);
     navigation.goBack();
   }
 
@@ -203,6 +203,7 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
             return { ...tt, schedules: tt.schedules.filter(s => s.id !== schedule!.id) };
           });
           saveTimetables(updated);
+          cancelScheduleNotifications(schedule!.id);
           navigation.goBack();
         },
       },

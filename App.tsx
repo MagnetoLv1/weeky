@@ -5,7 +5,12 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import { PaperProvider, MD3LightTheme } from 'react-native-paper';
 import RootNavigator from './src/navigation/RootNavigator';
-import { initTimetablesIfNeeded } from './src/store/timetableStore';
+import { getTimetables, initTimetablesIfNeeded } from './src/store/timetableStore';
+import {
+  setupNotificationChannel,
+  requestNotificationPermission,
+  syncAllNotifications,
+} from './src/utils/notification';
 
 // iOS: 'Pretendard' 패밀리명 → fontWeight 자동 매핑 (Pretendard-Bold 등)
 // Android: 'Pretendard-Regular' 고정 (weight 별도 파일 미매핑)
@@ -38,6 +43,9 @@ const theme = {
 export default function App() {
   useEffect(() => {
     initTimetablesIfNeeded();
+    setupNotificationChannel();
+    requestNotificationPermission();
+    syncAllNotifications(getTimetables());
   }, []);
 
   return (
