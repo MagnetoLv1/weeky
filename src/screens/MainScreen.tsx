@@ -13,7 +13,6 @@ import {
   Pressable,
   Dimensions,
   StyleSheet,
-  ActionSheetIOS,
 } from 'react-native';
 import { Portal, Modal, Button } from 'react-native-paper';
 import { BlurView } from '@react-native-community/blur';
@@ -27,6 +26,7 @@ import {
   Check,
   Ellipsis,
 } from 'lucide-react-native';
+import ContextMenu from 'react-native-context-menu-view';
 import RNPrint from 'react-native-print';
 import Share from 'react-native-share';
 import { captureRef } from 'react-native-view-shot';
@@ -679,35 +679,27 @@ export default function MainScreen({ navigation, route }: Props) {
     setAddModalVisible(true);
   }
 
-  function showMoreMenu() {
-    ActionSheetIOS.showActionSheetWithOptions(
-      {
-        options: ['설정하기', '프린트하기', '공유하기', '취소'],
-        cancelButtonIndex: 3,
-      },
-      async (index: number) => {
-        if (index === 0) {
-          navigation.navigate('Settings', {
-            timetableId: activeTimetable?.id ?? '',
-          });
-        } else if (index === 1) {
-          if (!activeTimetable) return;
-          const html = generateTimetableHtml(activeTimetable);
-          await RNPrint.print({ html });
-        } else if (index === 2) {
-          if (!viewShotRef.current) return;
-          try {
-            const uri = await captureRef(viewShotRef, {
-              format: 'png',
-              quality: 1,
-            });
-            await Share.open({ url: uri });
-          } catch (_) {
-            // 사용자가 공유 취소
-          }
-        }
-      },
-    );
+  async function handleContextMenuAction(index: number) {
+    if (index === 0) {
+      navigation.navigate('Settings', {
+        timetableId: activeTimetable?.id ?? '',
+      });
+    } else if (index === 1) {
+      if (!activeTimetable) return;
+      const html = generateTimetableHtml(activeTimetable);
+      await RNPrint.print({ html });
+    } else if (index === 2) {
+      if (!viewShotRef.current) return;
+      try {
+        const uri = await captureRef(viewShotRef, {
+          format: 'png',
+          quality: 1,
+        });
+        await Share.open({ url: uri });
+      } catch (_) {
+        // 사용자가 공유 취소
+      }
+    }
   }
 
   function confirmAddTimetable() {
@@ -961,12 +953,22 @@ export default function MainScreen({ navigation, route }: Props) {
                 >
                   <Plus size={20} color="#9ca3af" />
                 </TouchableOpacity>
-                <TouchableOpacity
-                  className="w-8 h-8 items-center justify-center"
-                  onPress={showMoreMenu}
-                >
-                  <Ellipsis size={18} color="#6b7280" />
-                </TouchableOpacity>
+                <View collapsable={false} className="w-8 h-8">
+                  <ContextMenu
+                    dropdownMenuMode
+                    style={{ width: 32, height: 32 }}
+                    actions={[
+                      { title: '설정하기', systemIcon: 'gearshape' },
+                      { title: '프린트하기', systemIcon: 'printer' },
+                      { title: '공유하기', systemIcon: 'square.and.arrow.up' },
+                    ]}
+                    onPress={e => handleContextMenuAction(e.nativeEvent.index)}
+                  >
+                    <View className="w-8 h-8 items-center justify-center">
+                      <Ellipsis size={18} color="#6b7280" />
+                    </View>
+                  </ContextMenu>
+                </View>
               </View>
             </View>
           </View>
