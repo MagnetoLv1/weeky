@@ -11,7 +11,12 @@
       "Bash(git checkout:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(git tag:*)",
+      "Bash(cd /Users/kwangcheolkim/my/weeky/ios && pod install 2>&1 | tail -5)",
+      "Bash(cd /Users/kwangcheolkim/my/weeky/ios && pod install)",
+      "Bash(npm view:*)",
+      "Bash(npx eslint:*)"
     ]
   }
 }
