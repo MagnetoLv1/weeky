@@ -8,7 +8,9 @@
       "Bash(NO_FLIPPER=1 pod install:*)",
       "Bash(npx react-native:*)",
       "Bash(xcodebuild:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }

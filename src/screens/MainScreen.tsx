@@ -9,7 +9,13 @@ import {
   StyleSheet,
 } from 'react-native';
 import { Portal, Modal, Button } from 'react-native-paper';
-import { ChevronLeft, ChevronRight, Plus, Settings as SettingsIcon } from 'lucide-react-native';
+import { BlurView } from '@react-native-community/blur';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Settings as SettingsIcon,
+} from 'lucide-react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -82,7 +88,11 @@ type DraggableBlockProps = {
   scrollY: SharedValue<number>;
   onPress: () => void;
   onDragStart: () => void;
-  onDragEnd: (scheduleId: string, newStartMin: number, durationMin: number) => void;
+  onDragEnd: (
+    scheduleId: string,
+    newStartMin: number,
+    durationMin: number,
+  ) => void;
 };
 
 function DraggableScheduleBlock({
@@ -187,7 +197,10 @@ function DraggableScheduleBlock({
         ]}
       >
         <Animated.View className="p-1" style={stickyLabelStyle}>
-          <Text numberOfLines={1} className="text-[12px] font-bold text-[#1f2937]">
+          <Text
+            numberOfLines={1}
+            className="text-[12px] font-bold text-[#1f2937]"
+          >
             {schedule.title}
           </Text>
           {schedule.subTitle ? (
@@ -243,7 +256,15 @@ export default function MainScreen({ navigation, route }: Props) {
   const colStyle4 = useAnimatedStyle(() => ({ width: colW4.value }));
   const colStyle5 = useAnimatedStyle(() => ({ width: colW5.value }));
   const colStyle6 = useAnimatedStyle(() => ({ width: colW6.value }));
-  const colStyles = [colStyle0, colStyle1, colStyle2, colStyle3, colStyle4, colStyle5, colStyle6];
+  const colStyles = [
+    colStyle0,
+    colStyle1,
+    colStyle2,
+    colStyle3,
+    colStyle4,
+    colStyle5,
+    colStyle6,
+  ];
 
   const slideStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
@@ -279,7 +300,8 @@ export default function MainScreen({ navigation, route }: Props) {
       setNowMin(n.getHours() * 60 + n.getMinutes());
     };
     // 다음 분 정각까지 남은 ms
-    const msToNextMinute = (60 - new Date().getSeconds()) * 1000 - new Date().getMilliseconds();
+    const msToNextMinute =
+      (60 - new Date().getSeconds()) * 1000 - new Date().getMilliseconds();
     const timeoutId = setTimeout(() => {
       tick();
       intervalId = setInterval(tick, 60_000);
@@ -296,8 +318,11 @@ export default function MainScreen({ navigation, route }: Props) {
     const nowTop = (nowMin - startMin) * MIN_CELL_HEIGHT;
     const { height: screenH } = Dimensions.get('window');
     const offset = Math.max(0, nowTop - screenH / 2);
-    setTimeout(() => scrollRef.current?.scrollTo({ y: offset, animated: false }), 100);
-  }, [timetables.length > 0]);  // timetables 첫 로드 시 1회
+    setTimeout(
+      () => scrollRef.current?.scrollTo({ y: offset, animated: false }),
+      100,
+    );
+  }, [timetables.length > 0]); // timetables 첫 로드 시 1회
 
   // 컬럼 너비 업데이트 (줌 상태 변경 시)
   useEffect(() => {
@@ -324,7 +349,8 @@ export default function MainScreen({ navigation, route }: Props) {
     .activeOffsetX([-15, 15])
     .runOnJS(true)
     .onEnd(e => {
-      const isSwipe = Math.abs(e.translationX) > 40 || Math.abs(e.velocityX) > 400;
+      const isSwipe =
+        Math.abs(e.translationX) > 40 || Math.abs(e.velocityX) > 400;
       if (!isSwipe) return;
       if (e.translationX < 0 && activeIndex < timetables.length - 1) {
         translateX.value = SCREEN_WIDTH;
@@ -352,7 +378,9 @@ export default function MainScreen({ navigation, route }: Props) {
       defaultEndTime: `${hh}:50`,
       timetableId: activeTimetable?.id,
     });
-    setTimeout(() => { isLongPressActive.current = false; }, 300);
+    setTimeout(() => {
+      isLongPressActive.current = false;
+    }, 300);
   }
 
   function handleCellPress(dayIndex: number) {
@@ -397,9 +425,11 @@ export default function MainScreen({ navigation, route }: Props) {
   }
 
   function getBlockStyle(schedule: Schedule) {
-    const top = (timeToMinutes(schedule.startTime) - startMin) * MIN_CELL_HEIGHT;
+    const top =
+      (timeToMinutes(schedule.startTime) - startMin) * MIN_CELL_HEIGHT;
     const height = Math.max(
-      (timeToMinutes(schedule.endTime) - timeToMinutes(schedule.startTime)) * MIN_CELL_HEIGHT,
+      (timeToMinutes(schedule.endTime) - timeToMinutes(schedule.startTime)) *
+        MIN_CELL_HEIGHT,
       MIN_CELL_HEIGHT * 2,
     );
     return { top, height };
@@ -430,101 +460,16 @@ export default function MainScreen({ navigation, route }: Props) {
 
   return (
     <View className="flex-1 bg-white">
-      {/* 앱 헤더 (고정) */}
-      <View className="px-4 pt-12 pb-2 border-b border-[#f3f4f6]">
-        <View className="flex-row items-start justify-between min-h-[40px]">
-          {/* 타이틀 + 스와이프 영역 */}
-          <GestureDetector gesture={panGesture}>
-            <View className="flex-1 py-1">
-              <View className="flex-row items-center gap-[6px]">
-                <ChevronLeft size={16} color={activeIndex > 0 ? '#9ca3af' : 'transparent'} />
-                <Text className="text-[18px] font-bold text-[#111827]">
-                  {activeTimetable?.name ?? '시간표'}
-                </Text>
-                <ChevronRight size={16} color={activeIndex < timetables.length - 1 ? '#9ca3af' : 'transparent'} />
-              </View>
-              <View className="flex-row gap-[3px] mt-[6px] ml-[22px] h-1">
-                {timetables.length > 1 && timetables.map((_, i) => (
-                  <View
-                    key={i}
-                    style={{
-                      borderRadius: 99,
-                      width: i === activeIndex ? 10 : 4,
-                      height: 4,
-                      backgroundColor: i === activeIndex ? '#3b82f6' : '#d1d5db',
-                    }}
-                  />
-                ))}
-              </View>
-            </View>
-          </GestureDetector>
-
-          {/* 버튼 */}
-          <View className="flex-row gap-1 pt-[2px]">
-            {zoomedDay !== null && (
-              <TouchableOpacity
-                className="w-8 h-8 items-center justify-center"
-                onPress={() => setZoomedDay(null)}
-              >
-                <Text className="text-[12px] text-[#6b7280]">전체</Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity
-              className="w-8 h-8 items-center justify-center"
-              onPress={handleAddTimetable}
-            >
-              <Plus size={20} color="#9ca3af" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              className="w-8 h-8 items-center justify-center"
-              onPress={() => navigation.navigate('Settings', { timetableId: activeTimetable?.id ?? '' })}
-            >
-              <SettingsIcon size={18} color="#6b7280" />
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-
-      {/* 요일 헤더 + 시간표 그리드 (슬라이드 대상) */}
-      <Animated.View className="flex-1" style={slideStyle}>
-        {/* 요일 헤더 */}
-        <View className="flex-row border-b border-[#e5e7eb] h-[44px]">
-          <View className="w-[58px]" />
-          {ALL_DAYS.map((day, i) => {
-            const headerVisible = i < numDays && (zoomedDay === null || Math.abs(i - zoomedDay) <= 1);
-            return (
-              <Animated.View
-                key={day}
-                className="items-center justify-center overflow-hidden"
-                style={colStyles[i]}
-              >
-                {headerVisible && (
-                  <View
-                    className={`w-8 h-8 rounded-full items-center justify-center ${
-                      i === todayIndex ? 'bg-blue-500' : 'bg-transparent'
-                    }`}
-                  >
-                    <Text
-                      className={`text-[13px] font-semibold ${
-                        i === todayIndex ? 'text-white' : 'text-[#374151]'
-                      }`}
-                    >
-                      {day}
-                    </Text>
-                  </View>
-                )}
-              </Animated.View>
-            );
-          })}
-        </View>
-
-        {/* 시간표 그리드 */}
+      {/* 슬라이드 컨테이너 — ScrollView와 BlurView를 같은 surface에 배치 */}
+      <Animated.View style={[{ flex: 1 }, slideStyle]}>
+        {/* 시간표 그리드 — contentContainerStyle로 헤더 높이만큼 아래서 시작 */}
         <Animated.ScrollView
           ref={scrollRef}
           showsVerticalScrollIndicator={false}
           scrollEnabled={!isDraggingSchedule}
           onScroll={scrollHandler}
           scrollEventThrottle={16}
+          contentContainerStyle={{ paddingTop: 144 }}
         >
           <View className="flex-row relative">
             {/* 현재 시간선 — 전체 너비 */}
@@ -541,15 +486,17 @@ export default function MainScreen({ navigation, route }: Props) {
                   zIndex: 10,
                 }}
               >
-                <View style={{
-                  position: 'absolute',
-                  left: -2,
-                  top: -1.75,
-                  width: 4,
-                  height: 4,
-                  borderRadius: 2,
-                  backgroundColor: '#EF4444',
-                }} />
+                <View
+                  style={{
+                    position: 'absolute',
+                    left: -2,
+                    top: -1.75,
+                    width: 4,
+                    height: 4,
+                    borderRadius: 2,
+                    backgroundColor: '#EF4444',
+                  }}
+                />
               </View>
             )}
             {/* 시간 라벨 */}
@@ -557,23 +504,23 @@ export default function MainScreen({ navigation, route }: Props) {
               {timeLabels.map(label => {
                 const { ampm, hour } = formatTimeLabel(label);
                 return (
-                  <View
-                    key={label}
-                    className="items-end pr-2 h-[90px]"
-                  >
+                  <View key={label} className="items-end pr-2 h-[90px]">
                     <Text className="text-[10px] text-[#9ca3af] -mt-[6px]">
-                      {ampm} <Text className="text-[14px] font-medium">{hour}</Text>시
+                      {ampm}{' '}
+                      <Text className="text-[14px] font-medium">{hour}</Text>시
                     </Text>
                   </View>
                 );
               })}
               {/* 현재 분 표시 */}
               {nowMin >= startMin && nowMin <= endMin && (
-                <View style={{
-                  position: 'absolute',
-                  top: (nowMin - startMin) * MIN_CELL_HEIGHT - 6,
-                  right: 6,
-                }}>
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: (nowMin - startMin) * MIN_CELL_HEIGHT - 6,
+                    right: 6,
+                  }}
+                >
                   <Text className="text-[9px] text-[#EF4444]">
                     {String(nowMin % 60).padStart(2, '0')}
                   </Text>
@@ -603,7 +550,9 @@ export default function MainScreen({ navigation, route }: Props) {
                     <View
                       key={`h-${label}`}
                       className="absolute left-0 right-0 border-t border-[#fafafa]"
-                      style={{ top: i * 60 * MIN_CELL_HEIGHT + 30 * MIN_CELL_HEIGHT }}
+                      style={{
+                        top: i * 60 * MIN_CELL_HEIGHT + 30 * MIN_CELL_HEIGHT,
+                      }}
                     />
                   ))}
                   {/* 빈 셀 (롱프레스=일정추가, 더블탭=줌) */}
@@ -613,7 +562,10 @@ export default function MainScreen({ navigation, route }: Props) {
                       <Pressable
                         key={`cell-${label}`}
                         className="absolute left-0 right-0"
-                        style={{ top: i * 60 * MIN_CELL_HEIGHT, height: 60 * MIN_CELL_HEIGHT }}
+                        style={{
+                          top: i * 60 * MIN_CELL_HEIGHT,
+                          height: 60 * MIN_CELL_HEIGHT,
+                        }}
                         onPress={() => handleCellPress(dayIndex)}
                         onLongPress={() => handleCellLongPress(dayIndex, hour)}
                         delayLongPress={400}
@@ -622,58 +574,181 @@ export default function MainScreen({ navigation, route }: Props) {
                   })}
                 </View>
 
-                {/* 알림 바 — 블록 시작 N분 전 위치에 독립 렌더링 */}
+                {/* 알림 바 */}
                 {(zoomedDay === null || Math.abs(dayIndex - zoomedDay) <= 1) &&
                   activeTimetable?.schedules
-                  .filter(s => s.dayOfWeek.includes(dayIndex) && s.notification?.enabled)
-                  .map(schedule => {
-                    const { top } = getBlockStyle(schedule);
-                    const minutesBefore = schedule.notification!.minutesBefore;
-                    const barTop = top - minutesBefore * MIN_CELL_HEIGHT;
-                    if (barTop < 0) return null;
-                    return (
-                      <View
-                        key={`notif-${schedule.id}`}
-                        pointerEvents="none"
-                        style={{
-                          position: 'absolute',
-                          top: barTop,
-                          left: 1,
-                          right: 1,
-                          height: 2,
-                          backgroundColor: '#FACC15',
-                          borderRadius: 1,
-                          zIndex: 5,
-                        }}
-                      />
-                    );
-                  })}
+                    .filter(
+                      s =>
+                        s.dayOfWeek.includes(dayIndex) &&
+                        s.notification?.enabled,
+                    )
+                    .map(schedule => {
+                      const { top } = getBlockStyle(schedule);
+                      const minutesBefore =
+                        schedule.notification!.minutesBefore;
+                      const barTop = top - minutesBefore * MIN_CELL_HEIGHT;
+                      if (barTop < 0) return null;
+                      return (
+                        <View
+                          key={`notif-${schedule.id}`}
+                          pointerEvents="none"
+                          style={{
+                            position: 'absolute',
+                            top: barTop,
+                            left: 1,
+                            right: 1,
+                            height: 2,
+                            backgroundColor: '#FACC15',
+                            borderRadius: 1,
+                            zIndex: 5,
+                          }}
+                        />
+                      );
+                    })}
 
                 {/* 일정 블록 */}
                 {(zoomedDay === null || Math.abs(dayIndex - zoomedDay) <= 1) &&
                   activeTimetable?.schedules
-                  .filter(s => s.dayOfWeek.includes(dayIndex))
-                  .map(schedule => {
-                    const { top, height } = getBlockStyle(schedule);
-                    return (
-                      <DraggableScheduleBlock
-                        key={schedule.id}
-                        schedule={schedule}
-                        top={top}
-                        height={height}
-                        startMin={startMin}
-                        endMin={endMin}
-                        scrollY={scrollY}
-                        onPress={() => handleSchedulePress(schedule)}
-                        onDragStart={() => setIsDraggingSchedule(true)}
-                        onDragEnd={handleScheduleDragEnd}
-                      />
-                    );
-                  })}
+                    .filter(s => s.dayOfWeek.includes(dayIndex))
+                    .map(schedule => {
+                      const { top, height } = getBlockStyle(schedule);
+                      return (
+                        <DraggableScheduleBlock
+                          key={schedule.id}
+                          schedule={schedule}
+                          top={top}
+                          height={height}
+                          startMin={startMin}
+                          endMin={endMin}
+                          scrollY={scrollY}
+                          onPress={() => handleSchedulePress(schedule)}
+                          onDragStart={() => setIsDraggingSchedule(true)}
+                          onDragEnd={handleScheduleDragEnd}
+                        />
+                      );
+                    })}
               </Animated.View>
             ))}
           </View>
         </Animated.ScrollView>
+
+        {/* 앱 헤더 — ScrollView와 같은 surface에서 absolute로 위에 올려야 blur가 동작 */}
+        <BlurView
+          blurType="prominent"
+          blurAmount={20}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 10,
+            borderBottomWidth: StyleSheet.hairlineWidth,
+            borderBottomColor: 'rgba(0,0,0,0.1)',
+          }}
+        >
+          <View className="px-4 pt-12 pb-2">
+            <View className="flex-row items-start justify-between min-h-[40px]">
+              {/* 타이틀 + 스와이프 영역 */}
+              <GestureDetector gesture={panGesture}>
+                <View className="flex-1 py-1">
+                  <View className="flex-row items-center gap-[6px]">
+                    <ChevronLeft
+                      size={16}
+                      color={activeIndex > 0 ? '#9ca3af' : 'transparent'}
+                    />
+                    <Text className="text-[18px] font-bold text-[#111827]">
+                      {activeTimetable?.name ?? '시간표'}
+                    </Text>
+                    <ChevronRight
+                      size={16}
+                      color={
+                        activeIndex < timetables.length - 1
+                          ? '#9ca3af'
+                          : 'transparent'
+                      }
+                    />
+                  </View>
+                  <View className="flex-row gap-[3px] mt-[6px] ml-[22px] h-1">
+                    {timetables.length > 1 &&
+                      timetables.map((_, i) => (
+                        <View
+                          key={i}
+                          style={{
+                            borderRadius: 99,
+                            width: i === activeIndex ? 10 : 4,
+                            height: 4,
+                            backgroundColor:
+                              i === activeIndex ? '#3b82f6' : '#d1d5db',
+                          }}
+                        />
+                      ))}
+                  </View>
+                </View>
+              </GestureDetector>
+
+              {/* 버튼 */}
+              <View className="flex-row gap-1 pt-[2px]">
+                {zoomedDay !== null && (
+                  <TouchableOpacity
+                    className="w-8 h-8 items-center justify-center"
+                    onPress={() => setZoomedDay(null)}
+                  >
+                    <Text className="text-[12px] text-[#6b7280]">전체</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  className="w-8 h-8 items-center justify-center"
+                  onPress={handleAddTimetable}
+                >
+                  <Plus size={20} color="#9ca3af" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  className="w-8 h-8 items-center justify-center"
+                  onPress={() =>
+                    navigation.navigate('Settings', {
+                      timetableId: activeTimetable?.id ?? '',
+                    })
+                  }
+                >
+                  <SettingsIcon size={18} color="#6b7280" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          {/* 요일 헤더 */}
+          <View className="flex-row border-b border-[#e5e7eb] h-[44px]">
+            <View className="w-[58px]" />
+            {ALL_DAYS.map((day, i) => {
+              const headerVisible =
+                i < numDays &&
+                (zoomedDay === null || Math.abs(i - zoomedDay) <= 1);
+              return (
+                <Animated.View
+                  key={day}
+                  className="items-center justify-center overflow-hidden"
+                  style={colStyles[i]}
+                >
+                  {headerVisible && (
+                    <View
+                      className={`w-8 h-8 rounded-full items-center justify-center ${
+                        i === todayIndex ? 'bg-blue-500' : 'bg-transparent'
+                      }`}
+                    >
+                      <Text
+                        className={`text-[13px] font-semibold ${
+                          i === todayIndex ? 'text-white' : 'text-[#374151]'
+                        }`}
+                      >
+                        {day}
+                      </Text>
+                    </View>
+                  )}
+                </Animated.View>
+              );
+            })}
+          </View>
+        </BlurView>
       </Animated.View>
 
       {/* 시간표 추가 모달 */}
@@ -688,9 +763,14 @@ export default function MainScreen({ navigation, route }: Props) {
             padding: 24,
           }}
         >
-          <Text className="text-[17px] font-semibold text-[#1C1C1E] mb-4">새 시간표</Text>
+          <Text className="text-[17px] font-semibold text-[#1C1C1E] mb-4">
+            새 시간표
+          </Text>
           <TextInput
-            style={{ borderWidth: StyleSheet.hairlineWidth, borderColor: '#E5E5EA' }}
+            style={{
+              borderWidth: StyleSheet.hairlineWidth,
+              borderColor: '#E5E5EA',
+            }}
             className="rounded-lg px-3 py-[10px] text-[16px] text-[#1C1C1E] bg-[#F2F2F7]"
             value={newTimetableName}
             onChangeText={setNewTimetableName}
@@ -702,7 +782,10 @@ export default function MainScreen({ navigation, route }: Props) {
             returnKeyType="done"
           />
           <View className="flex-row justify-end gap-2 mt-4">
-            <Button onPress={() => setAddModalVisible(false)} textColor="#6b7280">
+            <Button
+              onPress={() => setAddModalVisible(false)}
+              textColor="#6b7280"
+            >
               취소
             </Button>
             <Button mode="contained" onPress={confirmAddTimetable}>
