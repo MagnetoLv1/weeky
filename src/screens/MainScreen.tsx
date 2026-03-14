@@ -20,12 +20,7 @@ import BottomSheet, {
   BottomSheetBackdrop,
   BottomSheetView,
 } from '@gorhom/bottom-sheet';
-import {
-  ChevronDown,
-  Plus,
-  Check,
-  Ellipsis,
-} from 'lucide-react-native';
+import { ChevronDown, Plus, Check, Ellipsis } from 'lucide-react-native';
 import ContextMenu from 'react-native-context-menu-view';
 import RNPrint from 'react-native-print';
 import Share from 'react-native-share';
@@ -132,7 +127,7 @@ function DraggableScheduleBlock({
       prevTop.current = top;
       offsetY.value = 0;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [top]);
 
   const durationMin =
@@ -502,7 +497,7 @@ export default function MainScreen({ navigation, route }: Props) {
       () => scrollRef.current?.scrollTo({ y: offset, animated: false }),
       100,
     );
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timetables.length > 0]); // timetables 첫 로드 시 1회
 
   // 컬럼 너비 업데이트 (줌 상태 변경 시)
@@ -523,7 +518,7 @@ export default function MainScreen({ navigation, route }: Props) {
       }
       colWs[i].value = withTiming(w, { duration: ZOOM_DURATION });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [zoomedDay, numDays, availableWidth]);
 
   // 스와이프 전환 중 인접 시간표 데이터를 프리징하여 깜빡임 방지
@@ -767,17 +762,31 @@ export default function MainScreen({ navigation, route }: Props) {
                   zIndex: 10,
                 }}
               >
+                {/* 시간 라벨 컬럼 우측 끝에 시간 표시 */}
                 <View
                   style={{
                     position: 'absolute',
-                    left: -2,
-                    top: -1.75,
-                    width: 4,
-                    height: 4,
-                    borderRadius: 2,
-                    backgroundColor: '#EF4444',
+                    left: -TIME_COL_WIDTH + 4,
+                    top: -6,
+                    width: TIME_COL_WIDTH,
+                    alignItems: 'flex-end',
+                    paddingRight: 4,
                   }}
-                />
+                >
+                  <View
+                    style={{
+                      backgroundColor: '#EF4444',
+                      borderRadius: 7,
+                      paddingHorizontal: 4,
+                      paddingVertical: 1,
+                    }}
+                  >
+                    <Text className="text-[9px] text-white font-medium">
+                      {String(Math.floor(nowMin / 60)).padStart(2, '0')}:
+                      {String(nowMin % 60).padStart(2, '0')}
+                    </Text>
+                  </View>
+                </View>
               </View>
             )}
             {/* 시간 라벨 */}
@@ -793,20 +802,6 @@ export default function MainScreen({ navigation, route }: Props) {
                   </View>
                 );
               })}
-              {/* 현재 분 표시 */}
-              {nowMin >= startMin && nowMin <= endMin && (
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: (nowMin - startMin) * MIN_CELL_HEIGHT - 6,
-                    right: 6,
-                  }}
-                >
-                  <Text className="text-[9px] text-[#EF4444]">
-                    {String(nowMin % 60).padStart(2, '0')}
-                  </Text>
-                </View>
-              )}
             </View>
 
             {/* 요일별 컬럼 */}
