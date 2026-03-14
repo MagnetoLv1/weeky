@@ -10,11 +10,13 @@ import {
   Modal,
 } from 'react-native-paper';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import RNPrint from 'react-native-print';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { getTimetables, saveTimetables } from '../store/timetableStore';
+import { generateTimetableHtml } from '../utils/printHtml';
 import type { Timetable } from '../types';
 
 type Props = {
@@ -118,6 +120,12 @@ export default function SettingsScreen({ navigation, route }: Props) {
     setRenameModalVisible(false);
   }
 
+  async function handlePrint() {
+    if (!current) return;
+    const html = generateTimetableHtml(current);
+    await RNPrint.print({ html });
+  }
+
   function handleDelete() {
     if (timetables.length <= 1) {
       Alert.alert('알림', '시간표가 1개 이상 있어야 합니다.');
@@ -219,6 +227,20 @@ export default function SettingsScreen({ navigation, route }: Props) {
                 onValueChange={v => updateCurrent({ showWeekends: v })}
               />
             )}
+          />
+        </View>
+      </List.Section>
+
+      {/* 내보내기 */}
+      <List.Section>
+        <List.Subheader className="text-gray-500 text-[12px] uppercase tracking-[0.5px]">
+          내보내기
+        </List.Subheader>
+        <View className="bg-white mx-4 rounded-xl overflow-hidden">
+          <List.Item
+            title="시간표 프린트"
+            description="A4 용지에 시간표를 인쇄합니다"
+            onPress={handlePrint}
           />
         </View>
       </List.Section>

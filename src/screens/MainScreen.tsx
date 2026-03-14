@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -214,6 +214,148 @@ function DraggableScheduleBlock({
   );
 }
 
+// ── 인접 시간표 미리보기 (스와이프 전환용) ─────────────────────
+const StaticTimetableGrid = React.memo(
+  ({ timetable }: { timetable: Timetable }) => {
+    const ttStart = timetable.timeRangeStart ?? '07:00';
+    const ttEnd = timetable.timeRangeEnd ?? '23:00';
+    const ttShowWeekends = timetable.showWeekends ?? false;
+    const daysArr = ttShowWeekends ? ALL_DAYS : ALL_DAYS.slice(0, 5);
+    const nDays = daysArr.length;
+    const labels = generateTimeLabels(ttStart, ttEnd);
+    const sMin = timeToMinutes(ttStart);
+    const eMin = timeToMinutes(ttEnd);
+    const gHeight = (eMin - sMin) * MIN_CELL_HEIGHT;
+    const colW = (SCREEN_WIDTH - TIME_COL_WIDTH) / nDays;
+    const today = getTodayIndex();
+
+    return (
+      <View className="flex-1 bg-white">
+        <Animated.ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingTop: 144 }}
+        >
+          <View className="flex-row">
+            <View className="w-[58px]">
+              {labels.map(label => {
+                const { ampm, hour } = formatTimeLabel(label);
+                return (
+                  <View key={label} className="items-end pr-2 h-[90px]">
+                    <Text className="text-[10px] text-[#9ca3af] -mt-[6px]">
+                      {ampm}{' '}
+                      <Text className="text-[14px] font-medium">{hour}</Text>시
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+            {daysArr.map((day, dayIndex) => (
+              <View
+                key={day}
+                className="relative border-l border-[#f3f4f6]"
+                style={{ width: colW, height: gHeight }}
+              >
+                {labels.map((label, i) => (
+                  <View
+                    key={label}
+                    className="absolute left-0 right-0 border-t border-[#f3f4f6]"
+                    style={{ top: i * 60 * MIN_CELL_HEIGHT }}
+                  />
+                ))}
+                {timetable.schedules
+                  .filter(s => s.dayOfWeek.includes(dayIndex))
+                  .map(schedule => {
+                    const sTop =
+                      (timeToMinutes(schedule.startTime) - sMin) *
+                      MIN_CELL_HEIGHT;
+                    const sH = Math.max(
+                      (timeToMinutes(schedule.endTime) -
+                        timeToMinutes(schedule.startTime)) *
+                        MIN_CELL_HEIGHT,
+                      MIN_CELL_HEIGHT * 2,
+                    );
+                    return (
+                      <View
+                        key={schedule.id}
+                        className="absolute rounded-[4px] overflow-hidden"
+                        style={{
+                          top: sTop,
+                          height: sH,
+                          left: 1,
+                          right: 1,
+                          backgroundColor: schedule.color,
+                        }}
+                      >
+                        <View className="p-1">
+                          <Text
+                            numberOfLines={1}
+                            className="text-[12px] font-bold text-[#1f2937]"
+                          >
+                            {schedule.title}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+              </View>
+            ))}
+          </View>
+        </Animated.ScrollView>
+        <BlurView
+          blurType="prominent"
+          blurAmount={20}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            borderBottomWidth: StyleSheet.hairlineWidth,
+            borderBottomColor: 'rgba(0,0,0,0.1)',
+          }}
+        >
+          <View className="px-4 pt-12 pb-2">
+            <View className="flex-row items-start min-h-[40px]">
+              <View className="flex-1 py-1">
+                <View className="flex-row items-center gap-[6px]">
+                  <ChevronLeft size={16} color="#9ca3af" />
+                  <Text className="text-[18px] font-bold text-[#111827]">
+                    {timetable.name}
+                  </Text>
+                  <ChevronRight size={16} color="#9ca3af" />
+                </View>
+              </View>
+            </View>
+          </View>
+          <View className="flex-row border-b border-[#e5e7eb] h-[44px]">
+            <View className="w-[58px]" />
+            {daysArr.map((day, i) => (
+              <View
+                key={day}
+                className="items-center justify-center"
+                style={{ width: colW }}
+              >
+                <View
+                  className={`w-8 h-8 rounded-full items-center justify-center ${
+                    i === today ? 'bg-blue-500' : 'bg-transparent'
+                  }`}
+                >
+                  <Text
+                    className={`text-[13px] font-semibold ${
+                      i === today ? 'text-white' : 'text-[#374151]'
+                    }`}
+                  >
+                    {day}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </BlurView>
+      </View>
+    );
+  },
+);
+
 // ── 메인 화면 ──────────────────────────────────────────────────
 export default function MainScreen({ navigation, route }: Props) {
   const [timetables, setTimetables] = useState<Timetable[]>([]);
@@ -268,6 +410,14 @@ export default function MainScreen({ navigation, route }: Props) {
 
   const slideStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
+  }));
+
+  const prevSlideStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value - SCREEN_WIDTH }],
+  }));
+
+  const nextSlideStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value + SCREEN_WIDTH }],
   }));
 
   useFocusEffect(
@@ -344,22 +494,69 @@ export default function MainScreen({ navigation, route }: Props) {
     }
   }, [zoomedDay, numDays, availableWidth]);
 
+  // 스와이프 전환 중 인접 시간표 데이터를 프리징하여 깜빡임 방지
+  const pendingTranslateXReset = useRef(false);
+  const frozenAdjacentRef = useRef<{
+    prev: Timetable | null;
+    next: Timetable | null;
+  } | null>(null);
+
+  function handleSwipeAnimationDone(oldIndex: number, newIndex: number) {
+    // activeIndex 변경 전에 현재 인접 데이터를 프리징
+    // → translateX 리셋 전까지 정적 그리드가 올바른 시간표를 계속 표시
+    frozenAdjacentRef.current = {
+      prev: oldIndex > 0 ? timetables[oldIndex - 1] : null,
+      next: oldIndex < timetables.length - 1 ? timetables[oldIndex + 1] : null,
+    };
+    pendingTranslateXReset.current = true;
+    setActiveIndex(newIndex);
+  }
+
+  // useLayoutEffect: React 커밋 직후(화면 페인트 전)에 translateX 리셋
+  useLayoutEffect(() => {
+    if (pendingTranslateXReset.current) {
+      pendingTranslateXReset.current = false;
+      translateX.value = 0;
+      frozenAdjacentRef.current = null;
+    }
+  });
+
+  // 인접 시간표: 프리징된 데이터 우선, 없으면 현재 activeIndex 기준
+  const prevTimetable =
+    frozenAdjacentRef.current?.prev ??
+    (activeIndex > 0 ? timetables[activeIndex - 1] : null);
+  const nextTimetable =
+    frozenAdjacentRef.current?.next ??
+    (activeIndex < timetables.length - 1
+      ? timetables[activeIndex + 1]
+      : null);
+
   // 타이틀 영역 스와이프 → 시간표 전환
   const panGesture = Gesture.Pan()
     .activeOffsetX([-15, 15])
-    .runOnJS(true)
+    .onChange(e => {
+      // 끝에 도달하면 저항감 (rubber-band)
+      const canGoLeft = activeIndex < timetables.length - 1;
+      const canGoRight = activeIndex > 0;
+      if ((e.translationX < 0 && !canGoLeft) || (e.translationX > 0 && !canGoRight)) {
+        translateX.value = e.translationX * 0.2;
+      } else {
+        translateX.value = e.translationX;
+      }
+    })
     .onEnd(e => {
       const isSwipe =
         Math.abs(e.translationX) > 40 || Math.abs(e.velocityX) > 400;
-      if (!isSwipe) return;
-      if (e.translationX < 0 && activeIndex < timetables.length - 1) {
-        translateX.value = SCREEN_WIDTH;
-        setActiveIndex(activeIndex + 1);
-        translateX.value = withTiming(0, { duration: SLIDE_DURATION });
-      } else if (e.translationX > 0 && activeIndex > 0) {
-        translateX.value = -SCREEN_WIDTH;
-        setActiveIndex(activeIndex - 1);
-        translateX.value = withTiming(0, { duration: SLIDE_DURATION });
+      if (isSwipe && e.translationX < 0 && activeIndex < timetables.length - 1) {
+        translateX.value = withTiming(-SCREEN_WIDTH, { duration: SLIDE_DURATION }, () => {
+          runOnJS(handleSwipeAnimationDone)(activeIndex, activeIndex + 1);
+        });
+      } else if (isSwipe && e.translationX > 0 && activeIndex > 0) {
+        translateX.value = withTiming(SCREEN_WIDTH, { duration: SLIDE_DURATION }, () => {
+          runOnJS(handleSwipeAnimationDone)(activeIndex, activeIndex - 1);
+        });
+      } else {
+        translateX.value = withTiming(0, { duration: 200 });
       }
     });
 
@@ -459,7 +656,14 @@ export default function MainScreen({ navigation, route }: Props) {
   }
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-white" style={{ overflow: 'hidden' }}>
+      {/* 인접 시간표: 이전 */}
+      {prevTimetable && (
+        <Animated.View style={[StyleSheet.absoluteFill, prevSlideStyle]}>
+          <StaticTimetableGrid timetable={prevTimetable} />
+        </Animated.View>
+      )}
+
       {/* 슬라이드 컨테이너 — ScrollView와 BlurView를 같은 surface에 배치 */}
       <Animated.View style={[{ flex: 1 }, slideStyle]}>
         {/* 시간표 그리드 — contentContainerStyle로 헤더 높이만큼 아래서 시작 */}
@@ -750,6 +954,13 @@ export default function MainScreen({ navigation, route }: Props) {
           </View>
         </BlurView>
       </Animated.View>
+
+      {/* 인접 시간표: 다음 */}
+      {nextTimetable && (
+        <Animated.View style={[StyleSheet.absoluteFill, nextSlideStyle]}>
+          <StaticTimetableGrid timetable={nextTimetable} />
+        </Animated.View>
+      )}
 
       {/* 시간표 추가 모달 */}
       <Portal>
