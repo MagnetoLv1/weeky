@@ -10,6 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@gorhom/bottom-sheet": "^5.2.8",
     "@notifee/react-native": "^9.1.8",
     "@react-native-community/blur": "^4.4.1",
     "@react-native-community/datetimepicker": "^8.6.0",

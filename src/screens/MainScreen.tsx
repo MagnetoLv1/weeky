@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import {
   View,
   Text,
@@ -10,10 +16,14 @@ import {
 } from 'react-native';
 import { Portal, Modal, Button } from 'react-native-paper';
 import { BlurView } from '@react-native-community/blur';
+import BottomSheet, {
+  BottomSheetBackdrop,
+  BottomSheetView,
+} from '@gorhom/bottom-sheet';
 import {
-  ChevronLeft,
-  ChevronRight,
+  ChevronDown,
   Plus,
+  Check,
   Settings as SettingsIcon,
 } from 'lucide-react-native';
 import Animated, {
@@ -316,12 +326,11 @@ const StaticTimetableGrid = React.memo(
           <View className="px-4 pt-12 pb-2">
             <View className="flex-row items-start min-h-[40px]">
               <View className="flex-1 py-1">
-                <View className="flex-row items-center gap-[6px]">
-                  <ChevronLeft size={16} color="#9ca3af" />
+                <View className="flex-row items-center gap-[4px]">
                   <Text className="text-[18px] font-bold text-[#111827]">
                     {timetable.name}
                   </Text>
-                  <ChevronRight size={16} color="#9ca3af" />
+                  <ChevronDown size={16} color="#9ca3af" />
                 </View>
               </View>
             </View>
@@ -356,6 +365,19 @@ const StaticTimetableGrid = React.memo(
   },
 );
 
+function renderBackdrop(
+  props: React.ComponentProps<typeof BottomSheetBackdrop>,
+) {
+  return (
+    <BottomSheetBackdrop
+      {...props}
+      disappearsOnIndex={-1}
+      appearsOnIndex={0}
+      pressBehavior="close"
+    />
+  );
+}
+
 // ── 메인 화면 ──────────────────────────────────────────────────
 export default function MainScreen({ navigation, route }: Props) {
   const [timetables, setTimetables] = useState<Timetable[]>([]);
@@ -363,6 +385,7 @@ export default function MainScreen({ navigation, route }: Props) {
   const [zoomedDay, setZoomedDay] = useState<number | null>(null);
   const [isDraggingSchedule, setIsDraggingSchedule] = useState(false);
   const [addModalVisible, setAddModalVisible] = useState(false);
+  const bottomSheetRef = useRef<BottomSheet>(null);
   const [newTimetableName, setNewTimetableName] = useState('');
   const [nowMin, setNowMin] = useState(() => {
     const n = new Date();
@@ -527,9 +550,7 @@ export default function MainScreen({ navigation, route }: Props) {
     (activeIndex > 0 ? timetables[activeIndex - 1] : null);
   const nextTimetable =
     frozenAdjacentRef.current?.next ??
-    (activeIndex < timetables.length - 1
-      ? timetables[activeIndex + 1]
-      : null);
+    (activeIndex < timetables.length - 1 ? timetables[activeIndex + 1] : null);
 
   // 타이틀 영역 스와이프 → 시간표 전환
   const panGesture = Gesture.Pan()
@@ -538,7 +559,10 @@ export default function MainScreen({ navigation, route }: Props) {
       // 끝에 도달하면 저항감 (rubber-band)
       const canGoLeft = activeIndex < timetables.length - 1;
       const canGoRight = activeIndex > 0;
-      if ((e.translationX < 0 && !canGoLeft) || (e.translationX > 0 && !canGoRight)) {
+      if (
+        (e.translationX < 0 && !canGoLeft) ||
+        (e.translationX > 0 && !canGoRight)
+      ) {
         translateX.value = e.translationX * 0.2;
       } else {
         translateX.value = e.translationX;
@@ -547,14 +571,26 @@ export default function MainScreen({ navigation, route }: Props) {
     .onEnd(e => {
       const isSwipe =
         Math.abs(e.translationX) > 40 || Math.abs(e.velocityX) > 400;
-      if (isSwipe && e.translationX < 0 && activeIndex < timetables.length - 1) {
-        translateX.value = withTiming(-SCREEN_WIDTH, { duration: SLIDE_DURATION }, () => {
-          runOnJS(handleSwipeAnimationDone)(activeIndex, activeIndex + 1);
-        });
+      if (
+        isSwipe &&
+        e.translationX < 0 &&
+        activeIndex < timetables.length - 1
+      ) {
+        translateX.value = withTiming(
+          -SCREEN_WIDTH,
+          { duration: SLIDE_DURATION },
+          () => {
+            runOnJS(handleSwipeAnimationDone)(activeIndex, activeIndex + 1);
+          },
+        );
       } else if (isSwipe && e.translationX > 0 && activeIndex > 0) {
-        translateX.value = withTiming(SCREEN_WIDTH, { duration: SLIDE_DURATION }, () => {
-          runOnJS(handleSwipeAnimationDone)(activeIndex, activeIndex - 1);
-        });
+        translateX.value = withTiming(
+          SCREEN_WIDTH,
+          { duration: SLIDE_DURATION },
+          () => {
+            runOnJS(handleSwipeAnimationDone)(activeIndex, activeIndex - 1);
+          },
+        );
       } else {
         translateX.value = withTiming(0, { duration: 200 });
       }
@@ -850,43 +886,21 @@ export default function MainScreen({ navigation, route }: Props) {
             borderBottomColor: 'rgba(0,0,0,0.1)',
           }}
         >
-          <View className="px-4 pt-12 pb-2">
+          <View className="px-4 pt-12 pb-0">
             <View className="flex-row items-start justify-between min-h-[40px]">
               {/* 타이틀 + 스와이프 영역 */}
               <GestureDetector gesture={panGesture}>
                 <View className="flex-1 py-1">
-                  <View className="flex-row items-center gap-[6px]">
-                    <ChevronLeft
-                      size={16}
-                      color={activeIndex > 0 ? '#9ca3af' : 'transparent'}
-                    />
+                  <TouchableOpacity
+                    className="flex-row items-center gap-[4px]"
+                    onPress={() => bottomSheetRef.current?.expand()}
+                    activeOpacity={0.6}
+                  >
                     <Text className="text-[18px] font-bold text-[#111827]">
                       {activeTimetable?.name ?? '시간표'}
                     </Text>
-                    <ChevronRight
-                      size={16}
-                      color={
-                        activeIndex < timetables.length - 1
-                          ? '#9ca3af'
-                          : 'transparent'
-                      }
-                    />
-                  </View>
-                  <View className="flex-row gap-[3px] mt-[6px] ml-[22px] h-1">
-                    {timetables.length > 1 &&
-                      timetables.map((_, i) => (
-                        <View
-                          key={i}
-                          style={{
-                            borderRadius: 99,
-                            width: i === activeIndex ? 10 : 4,
-                            height: 4,
-                            backgroundColor:
-                              i === activeIndex ? '#3b82f6' : '#d1d5db',
-                          }}
-                        />
-                      ))}
-                  </View>
+                    <ChevronDown size={16} color="#9ca3af" />
+                  </TouchableOpacity>
                 </View>
               </GestureDetector>
 
@@ -961,6 +975,51 @@ export default function MainScreen({ navigation, route }: Props) {
           <StaticTimetableGrid timetable={nextTimetable} />
         </Animated.View>
       )}
+
+      {/* 시간표 선택 바텀시트 */}
+      <BottomSheet
+        ref={bottomSheetRef}
+        index={-1}
+        enableDynamicSizing
+        enablePanDownToClose
+        backdropComponent={renderBackdrop}
+      >
+        <BottomSheetView>
+          <Text className="text-[15px] font-semibold text-[#1C1C1E] px-5 pb-3 pt-1">
+            시간표 선택
+          </Text>
+          {timetables.map((tt, i) => (
+            <TouchableOpacity
+              key={tt.id}
+              className="flex-row items-center px-5 py-3"
+              onPress={() => {
+                if (i !== activeIndex) {
+                  const direction = i > activeIndex ? -1 : 1;
+                  translateX.value = -direction * SCREEN_WIDTH;
+                  setActiveIndex(i);
+                  translateX.value = withTiming(0, {
+                    duration: SLIDE_DURATION,
+                  });
+                }
+                bottomSheetRef.current?.close();
+              }}
+              activeOpacity={0.6}
+            >
+              <Text
+                className={`flex-1 text-[16px] ${
+                  i === activeIndex
+                    ? 'font-semibold text-[#3b82f6]'
+                    : 'text-[#1C1C1E]'
+                }`}
+              >
+                {tt.name}
+              </Text>
+              {i === activeIndex && <Check size={18} color="#3b82f6" />}
+            </TouchableOpacity>
+          ))}
+          <View className="h-8" />
+        </BottomSheetView>
+      </BottomSheet>
 
       {/* 시간표 추가 모달 */}
       <Portal>
