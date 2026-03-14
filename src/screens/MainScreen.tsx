@@ -13,6 +13,7 @@ import {
   Pressable,
   Dimensions,
   StyleSheet,
+  ActionSheetIOS,
 } from 'react-native';
 import { Portal, Modal, Button } from 'react-native-paper';
 import { BlurView } from '@react-native-community/blur';
@@ -24,8 +25,12 @@ import {
   ChevronDown,
   Plus,
   Check,
-  Settings as SettingsIcon,
+  Ellipsis,
 } from 'lucide-react-native';
+import RNPrint from 'react-native-print';
+import Share from 'react-native-share';
+import { captureRef } from 'react-native-view-shot';
+import { generateTimetableHtml } from '../utils/printHtml';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -394,6 +399,7 @@ export default function MainScreen({ navigation, route }: Props) {
   const todayIndex = getTodayIndex();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const scrollRef = useRef<any>(null);
+  const viewShotRef = useRef<View>(null);
 
   // 슬라이드 전환 애니메이션
   const translateX = useSharedValue(0);
@@ -673,6 +679,37 @@ export default function MainScreen({ navigation, route }: Props) {
     setAddModalVisible(true);
   }
 
+  function showMoreMenu() {
+    ActionSheetIOS.showActionSheetWithOptions(
+      {
+        options: ['설정하기', '프린트하기', '공유하기', '취소'],
+        cancelButtonIndex: 3,
+      },
+      async (index: number) => {
+        if (index === 0) {
+          navigation.navigate('Settings', {
+            timetableId: activeTimetable?.id ?? '',
+          });
+        } else if (index === 1) {
+          if (!activeTimetable) return;
+          const html = generateTimetableHtml(activeTimetable);
+          await RNPrint.print({ html });
+        } else if (index === 2) {
+          if (!viewShotRef.current) return;
+          try {
+            const uri = await captureRef(viewShotRef, {
+              format: 'png',
+              quality: 1,
+            });
+            await Share.open({ url: uri });
+          } catch (_) {
+            // 사용자가 공유 취소
+          }
+        }
+      },
+    );
+  }
+
   function confirmAddTimetable() {
     const name = newTimetableName.trim();
     if (!name) return;
@@ -704,7 +741,11 @@ export default function MainScreen({ navigation, route }: Props) {
       <Animated.View style={[{ flex: 1 }, slideStyle]}>
         {/* 시간표 그리드 — contentContainerStyle로 헤더 높이만큼 아래서 시작 */}
         <Animated.ScrollView
-          ref={scrollRef}
+          collapsable={false}
+          ref={(node: any) => {
+            scrollRef.current = node;
+            (viewShotRef as any).current = node;
+          }}
           showsVerticalScrollIndicator={false}
           scrollEnabled={!isDraggingSchedule}
           onScroll={scrollHandler}
@@ -922,13 +963,9 @@ export default function MainScreen({ navigation, route }: Props) {
                 </TouchableOpacity>
                 <TouchableOpacity
                   className="w-8 h-8 items-center justify-center"
-                  onPress={() =>
-                    navigation.navigate('Settings', {
-                      timetableId: activeTimetable?.id ?? '',
-                    })
-                  }
+                  onPress={showMoreMenu}
                 >
-                  <SettingsIcon size={18} color="#6b7280" />
+                  <Ellipsis size={18} color="#6b7280" />
                 </TouchableOpacity>
               </View>
             </View>

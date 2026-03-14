@@ -1471,6 +1471,8 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - react-native-context-menu-view (1.21.0):
+    - React
   - react-native-print (0.11.0):
     - React-Core
   - react-native-safe-area-context (5.7.0):
@@ -2326,6 +2328,7 @@ DEPENDENCIES:
   - React-Mapbuffer (from `../node_modules/react-native/ReactCommon`)
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
   - "react-native-blur (from `../node_modules/@react-native-community/blur`)"
+  - react-native-context-menu-view (from `../node_modules/react-native-context-menu-view`)
   - react-native-print (from `../node_modules/react-native-print`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - react-native-view-shot (from `../node_modules/react-native-view-shot`)
@@ -2463,6 +2466,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/microtasks"
   react-native-blur:
     :path: "../node_modules/@react-native-community/blur"
+  react-native-context-menu-view:
+    :path: "../node_modules/react-native-context-menu-view"
   react-native-print:
     :path: "../node_modules/react-native-print"
   react-native-safe-area-context:
@@ -2603,6 +2608,7 @@ SPEC CHECKSUMS:
   React-Mapbuffer: 53f28c81b84767a0b2fb4c0109dd7e4571226f76
   React-microtasksnativemodule: ddaf25a8d69f694bc880fb6055e34d79f1d50138
   react-native-blur: 4173cfa2b37358b2e767ca690a8afa2cb74b0aae
+  react-native-context-menu-view: 04c653716953ebecbfab582884f78ef5acac96fd
   react-native-print: f704aef52d931bfce6d1d84351dbb5232d7ecb89
   react-native-safe-area-context: 29044d05d61f2c60d0828c373bd0ebe17eed58d0
   react-native-view-shot: 26174e54ec6b4b7c5d70b86964b747919759adc1
