@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "698111208612",
+    "project_id": "weeky-flynn",
+    "storage_bucket": "weeky-flynn.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:698111208612:android:fbed156bddeff687cd8a31",
+        "android_client_info": {
+          "package_name": "com.flynn.weeky"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA31D-ddSMC4NoX7YGdjPP5axCvhn-ia_8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -336,5 +336,6 @@ Settings {
 - [x] 화면 줌: 일정 더블 탭 시 해당 요일 중앙 확대, 줌인 상태에서 편집/드래그/추가 모두 가능
 - [x] 빈 상태: 그리드만 표시
 - [x] Out of Scope 확정: 다크모드, 클라우드 동기화, 색상 커스텀, 다국어, 캘린더 연동, 잠금 기능
+- [x] CI/CD: GitHub Actions + Firebase App Distribution 배포 자동화 (`deploy/prod` 브랜치 push 시 Android APK + iOS IPA 빌드 및 배포)
 
 > ✅ Spec 문서 최종 완성!
