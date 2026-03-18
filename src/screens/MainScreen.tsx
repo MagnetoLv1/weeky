@@ -347,7 +347,13 @@ const StaticTimetableGrid = React.memo(
                 >
                   <Text
                     className={`text-[13px] font-semibold ${
-                      i === today ? 'text-white' : 'text-[#374151]'
+                      i === today
+                        ? 'text-white'
+                        : i === 5
+                          ? 'text-blue-500'
+                          : i === 6
+                            ? 'text-red-500'
+                            : 'text-[#374151]'
                     }`}
                   >
                     {day}
@@ -976,11 +982,19 @@ export default function MainScreen({ navigation, route }: Props) {
                   <ContextMenu
                     dropdownMenuMode
                     style={{ width: 32, height: 32 }}
-                    actions={[
-                      { title: '설정하기', systemIcon: 'gearshape' },
-                      { title: '프린트하기', systemIcon: 'printer' },
-                      { title: '공유하기', systemIcon: 'square.and.arrow.up' },
-                    ]}
+                    actions={
+                      Platform.OS === 'android'
+                        ? [
+                            { title: '설정하기', icon: 'ic_settings' },
+                            { title: '프린트하기', icon: 'ic_print' },
+                            { title: '공유하기', icon: 'ic_share' },
+                          ]
+                        : [
+                            { title: '설정하기', systemIcon: 'gearshape' },
+                            { title: '프린트하기', systemIcon: 'printer' },
+                            { title: '공유하기', systemIcon: 'square.and.arrow.up' },
+                          ]
+                    }
                     onPress={e => handleContextMenuAction(e.nativeEvent.index)}
                   >
                     <View className="w-8 h-8 items-center justify-center">
@@ -1013,7 +1027,13 @@ export default function MainScreen({ navigation, route }: Props) {
                     >
                       <Text
                         className={`text-[13px] font-semibold ${
-                          i === todayIndex ? 'text-white' : 'text-[#374151]'
+                          i === todayIndex
+                            ? 'text-white'
+                            : i === 5
+                              ? 'text-blue-500'
+                              : i === 6
+                                ? 'text-red-500'
+                                : 'text-[#374151]'
                         }`}
                       >
                         {day}
