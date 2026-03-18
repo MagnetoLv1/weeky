@@ -14,6 +14,7 @@ import {
   Dimensions,
   StyleSheet,
   Platform,
+  StatusBar,
 } from 'react-native';
 import { Portal, Modal, Button } from 'react-native-paper';
 import { BlurView } from '@react-native-community/blur';
@@ -39,6 +40,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { RouteProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { getTimetables, saveTimetables } from '../store/timetableStore';
@@ -227,8 +229,12 @@ function DraggableScheduleBlock({
 }
 
 // ── 인접 시간표 미리보기 (스와이프 전환용) ─────────────────────
+const HEADER_CONTENT_HEIGHT = 92; // 타이틀 영역 48px + 요일 헤더 44px
+
 const StaticTimetableGrid = React.memo(
   ({ timetable }: { timetable: Timetable }) => {
+    const insets = useSafeAreaInsets();
+    const topInset = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : insets.top;
     const ttStart = timetable.timeRangeStart ?? '07:00';
     const ttEnd = timetable.timeRangeEnd ?? '23:00';
     const ttShowWeekends = timetable.showWeekends ?? false;
@@ -245,7 +251,7 @@ const StaticTimetableGrid = React.memo(
       <View className="flex-1 bg-white">
         <Animated.ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingTop: 144 }}
+          contentContainerStyle={{ paddingTop: topInset + HEADER_CONTENT_HEIGHT }}
         >
           <View className="flex-row">
             <View className="w-[58px]">
@@ -314,7 +320,7 @@ const StaticTimetableGrid = React.memo(
           </View>
         </Animated.ScrollView>
         <HeaderContainer isIos={Platform.OS === 'ios'}>
-          <View className="px-4 pt-12 pb-2">
+          <View className="px-4 pb-2" style={{ paddingTop: topInset }}>
             <View className="flex-row items-start min-h-[40px]">
               <View className="flex-1 py-1">
                 <View className="flex-row items-center gap-[4px]">
@@ -401,6 +407,8 @@ function renderBackdrop(
 
 // ── 메인 화면 ──────────────────────────────────────────────────
 export default function MainScreen({ navigation, route }: Props) {
+  const insets = useSafeAreaInsets();
+  const topInset = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : insets.top;
   const [timetables, setTimetables] = useState<Timetable[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [zoomedDay, setZoomedDay] = useState<number | null>(null);
@@ -765,7 +773,7 @@ export default function MainScreen({ navigation, route }: Props) {
           scrollEnabled={!isDraggingSchedule}
           onScroll={scrollHandler}
           scrollEventThrottle={16}
-          contentContainerStyle={{ paddingTop: 144 }}
+          contentContainerStyle={{ paddingTop: topInset + HEADER_CONTENT_HEIGHT }}
         >
           <View className="flex-row relative">
             {/* 현재 시간선 — 전체 너비 */}
@@ -930,7 +938,7 @@ export default function MainScreen({ navigation, route }: Props) {
 
         {/* 앱 헤더 — ScrollView와 같은 surface에서 absolute로 위에 올려야 blur가 동작 */}
         <HeaderContainer isIos={Platform.OS === 'ios'}>
-          <View className="px-4 pt-12 pb-0">
+          <View className="px-4 pb-0" style={{ paddingTop: topInset }}>
             <View className="flex-row items-start justify-between min-h-[40px]">
               {/* 타이틀 + 스와이프 영역 */}
               <GestureDetector gesture={panGesture}>
