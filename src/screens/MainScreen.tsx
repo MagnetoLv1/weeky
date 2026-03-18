@@ -13,6 +13,7 @@ import {
   Pressable,
   Dimensions,
   StyleSheet,
+  Platform,
 } from 'react-native';
 import { Portal, Modal, Button } from 'react-native-paper';
 import { BlurView } from '@react-native-community/blur';
@@ -312,18 +313,7 @@ const StaticTimetableGrid = React.memo(
             ))}
           </View>
         </Animated.ScrollView>
-        <BlurView
-          blurType="prominent"
-          blurAmount={20}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            borderBottomWidth: StyleSheet.hairlineWidth,
-            borderBottomColor: 'rgba(0,0,0,0.1)',
-          }}
-        >
+        <HeaderContainer isIos={Platform.OS === 'ios'}>
           <View className="px-4 pt-12 pb-2">
             <View className="flex-row items-start min-h-[40px]">
               <View className="flex-1 py-1">
@@ -360,11 +350,41 @@ const StaticTimetableGrid = React.memo(
               </View>
             ))}
           </View>
-        </BlurView>
+        </HeaderContainer>
       </View>
     );
   },
 );
+
+function HeaderContainer({
+  isIos,
+  children,
+}: {
+  isIos: boolean;
+  children: React.ReactNode;
+}) {
+  const style = {
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(0,0,0,0.1)',
+  };
+  if (isIos) {
+    return (
+      <BlurView blurType="prominent" blurAmount={20} style={style}>
+        {children}
+      </BlurView>
+    );
+  }
+  return (
+    <View style={[style, { backgroundColor: 'rgba(255,255,255,0.95)' }]}>
+      {children}
+    </View>
+  );
+}
 
 function renderBackdrop(
   props: React.ComponentProps<typeof BottomSheetBackdrop>,
@@ -909,19 +929,7 @@ export default function MainScreen({ navigation, route }: Props) {
         </Animated.ScrollView>
 
         {/* 앱 헤더 — ScrollView와 같은 surface에서 absolute로 위에 올려야 blur가 동작 */}
-        <BlurView
-          blurType="prominent"
-          blurAmount={20}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            zIndex: 10,
-            borderBottomWidth: StyleSheet.hairlineWidth,
-            borderBottomColor: 'rgba(0,0,0,0.1)',
-          }}
-        >
+        <HeaderContainer isIos={Platform.OS === 'ios'}>
           <View className="px-4 pt-12 pb-0">
             <View className="flex-row items-start justify-between min-h-[40px]">
               {/* 타이틀 + 스와이프 영역 */}
@@ -1008,7 +1016,7 @@ export default function MainScreen({ navigation, route }: Props) {
               );
             })}
           </View>
-        </BlurView>
+        </HeaderContainer>
       </Animated.View>
 
       {/* 인접 시간표: 다음 */}
