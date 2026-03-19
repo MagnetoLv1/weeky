@@ -5,6 +5,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { cn } from '../utils/cn';
 import {
   View,
   Text,
@@ -345,14 +346,10 @@ const StaticTimetableGrid = React.memo(
                 style={{ width: colW }}
               >
                 <View
-                  className={`w-8 h-8 rounded-full items-center justify-center ${
-                    i === today ? 'bg-blue-500' : 'bg-transparent'
-                  }`}
+                  className={cn('w-8 h-8 rounded-full items-center justify-center', i === today && 'bg-blue-500')}
                 >
                   <Text
-                    className={`text-[13px] font-semibold ${
-                      i === today ? 'text-white' : 'text-[#374151]'
-                    }`}
+                    className={cn('text-[13px] font-semibold', i === today ? 'text-white' : 'text-[#374151]')}
                   >
                     {day}
                   </Text>
@@ -991,14 +988,10 @@ export default function MainScreen({ navigation, route }: Props) {
                 >
                   {headerVisible && (
                     <View
-                      className={`w-8 h-8 rounded-full items-center justify-center ${
-                        i === todayIndex ? 'bg-blue-500' : 'bg-transparent'
-                      }`}
+                      className={cn('w-8 h-8 rounded-full items-center justify-center', i === todayIndex && 'bg-blue-500')}
                     >
                       <Text
-                        className={`text-[13px] font-semibold ${
-                          i === todayIndex ? 'text-white' : 'text-[#374151]'
-                        }`}
+                        className={cn('text-[13px] font-semibold', i === todayIndex ? 'text-white' : 'text-[#374151]')}
                       >
                         {day}
                       </Text>
@@ -1048,11 +1041,7 @@ export default function MainScreen({ navigation, route }: Props) {
               activeOpacity={0.6}
             >
               <Text
-                className={`flex-1 text-[16px] ${
-                  i === activeIndex
-                    ? 'font-semibold text-[#3b82f6]'
-                    : 'text-[#1C1C1E]'
-                }`}
+                className={cn('flex-1 text-[16px]', i === activeIndex ? 'font-semibold text-[#3b82f6]' : 'text-[#1C1C1E]')}
               >
                 {tt.name}
               </Text>

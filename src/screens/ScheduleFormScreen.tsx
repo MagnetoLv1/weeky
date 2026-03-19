@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { cn } from '../utils/cn';
 import {
   View,
   Text,
@@ -279,13 +280,9 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
                 <TouchableOpacity
                   key={day}
                   onPress={() => toggleDay(i)}
-                  className={`flex-1 h-[34px] rounded-[17px] items-center justify-center ${
-                    selectedDays.includes(i) ? 'bg-blue-500' : 'bg-[#E5E5EA]'
-                  }`}
+                  className={cn('flex-1 h-[34px] rounded-[17px] items-center justify-center', selectedDays.includes(i) ? 'bg-blue-500' : 'bg-[#E5E5EA]')}
                 >
-                  <Text className={`text-[13px] font-medium ${
-                    selectedDays.includes(i) ? 'text-white' : 'text-[#1C1C1E]'
-                  }`}>
+                  <Text className={cn('text-[13px] font-medium', selectedDays.includes(i) ? 'text-white' : 'text-[#1C1C1E]')}>
                     {day}
                   </Text>
                 </TouchableOpacity>
@@ -385,14 +382,10 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
                       {([0, 5, 10, 15, 30] as const).map(min => (
                         <TouchableOpacity
                           key={min}
-                          className={`flex-1 h-[34px] rounded-lg items-center justify-center ${
-                            notifMinutes === min ? 'bg-blue-500' : 'bg-[#E5E5EA]'
-                          }`}
+                          className={cn('flex-1 h-[34px] rounded-lg items-center justify-center', notifMinutes === min ? 'bg-blue-500' : 'bg-[#E5E5EA]')}
                           onPress={() => { setNotifMinutes(min); setShowNotifPicker(false); }}
                         >
-                          <Text className={`text-[12px] font-medium ${
-                            notifMinutes === min ? 'text-white' : 'text-[#1C1C1E]'
-                          }`}>
+                          <Text className={cn('text-[12px] font-medium', notifMinutes === min ? 'text-white' : 'text-[#1C1C1E]')}>
                             {NOTIF_LABELS[min]}
                           </Text>
                         </TouchableOpacity>
