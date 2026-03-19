@@ -571,7 +571,6 @@ export default function MainScreen({ navigation, route }: Props) {
   const topInset = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : insets.top;
   const [timetables, setTimetables] = useState<Timetable[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [zoomedDay, setZoomedDay] = useState<number | null>(null);
   const [isDraggingSchedule, setIsDraggingSchedule] = useState(false);
   const [addModalVisible, setAddModalVisible] = useState(false);
   const bottomSheetRef = useRef<BottomSheet>(null);
@@ -605,6 +604,17 @@ export default function MainScreen({ navigation, route }: Props) {
   const colW6 = useSharedValue(0);
   const colWs = [colW0, colW1, colW2, colW3, colW4, colW5, colW6];
 
+  // 핀치 줌 스케일 (1.0 ~ 2.0)
+  const pinchScale = useSharedValue(1);
+  const savedPinchScale = useSharedValue(1);
+
+  // 좌우 팬 오프셋 (줌 상태에서 가로 스크롤)
+  const zoomPanOffsetX = useSharedValue(0);
+  const savedZoomPanOffsetX = useSharedValue(0);
+
+  // 워크렛에서 numDays 접근용 (JS 변수는 워크렛 내 직접 참조 불가)
+  const numDaysShared = useSharedValue(5);
+
   const colStyle0 = useAnimatedStyle(() => ({ width: colW0.value }));
   const colStyle1 = useAnimatedStyle(() => ({ width: colW1.value }));
   const colStyle2 = useAnimatedStyle(() => ({ width: colW2.value }));
@@ -624,6 +634,12 @@ export default function MainScreen({ navigation, route }: Props) {
 
   const slideStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
+  }));
+
+  // 핀치/팬 제스처로 적용되는 요일 컬럼 컨테이너 translateX
+  const columnsContainerStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: zoomPanOffsetX.value }],
+    flexDirection: 'row' as const,
   }));
 
   const prevSlideStyle = useAnimatedStyle(() => ({
@@ -689,26 +705,23 @@ export default function MainScreen({ navigation, route }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timetables.length > 0]); // timetables 첫 로드 시 1회
 
-  // 컬럼 너비 업데이트 (줌 상태 변경 시)
+  // 컬럼 너비 업데이트 (numDays/availableWidth 변경 시 균등 분배)
+  // 핀치 줌은 컨테이너 translateX+colW*scale로 처리하므로 여기선 단순 균등 분배만 수행
   useEffect(() => {
+    numDaysShared.value = numDays;
     const normalW = availableWidth / numDays;
     for (let i = 0; i < 7; i++) {
-      let w: number;
-      if (i >= numDays) {
-        w = 0; // 주말 미표시
-      } else if (zoomedDay === null) {
-        w = normalW;
-      } else if (i === zoomedDay) {
-        w = availableWidth * 0.6; // 줌된 요일: 60%
-      } else if (Math.abs(i - zoomedDay) === 1) {
-        w = availableWidth * 0.2; // 인접 요일: 20%
-      } else {
-        w = 0; // 나머지 요일: 밀림
-      }
-      colWs[i].value = withTiming(w, { duration: ZOOM_DURATION });
+      colWs[i].value = withTiming(i < numDays ? normalW : 0, {
+        duration: ZOOM_DURATION,
+      });
     }
+    // numDays 변경 시 줌 상태 리셋
+    pinchScale.value = withTiming(1, { duration: ZOOM_DURATION });
+    savedPinchScale.value = 1;
+    zoomPanOffsetX.value = withTiming(0, { duration: ZOOM_DURATION });
+    savedZoomPanOffsetX.value = 0;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [zoomedDay, numDays, availableWidth]);
+  }, [numDays, availableWidth]);
 
   // 스와이프 전환 중 인접 시간표 데이터를 프리징하여 깜빡임 방지
   const pendingTranslateXReset = useRef(false);
@@ -789,13 +802,60 @@ export default function MainScreen({ navigation, route }: Props) {
       }
     });
 
-  // 롱프레스 후 onPress가 추가로 호출되는 것 방지
-  const isLongPressActive = useRef(false);
-  // 더블탭 감지용 (요일별 마지막 탭 시각)
-  const lastTapMs = useRef<number[]>(new Array(7).fill(0));
+  // 핀치 줌 제스처 — 전체 요일 균등 확대 (최대 2배)
+  const pinchGesture = Gesture.Pinch()
+    .onUpdate(e => {
+      const newScale = Math.min(2, Math.max(1, savedPinchScale.value * e.scale));
+      pinchScale.value = newScale;
+      // 컬럼 너비를 스케일에 맞게 실시간 업데이트
+      const normalW = availableWidth / numDaysShared.value;
+      for (let i = 0; i < 7; i++) {
+        colWs[i].value = i < numDaysShared.value ? normalW * newScale : 0;
+      }
+      // 팬 오프셋이 범위 초과하면 클램프
+      const maxPan = -(availableWidth * (newScale - 1));
+      if (zoomPanOffsetX.value < maxPan) {
+        zoomPanOffsetX.value = maxPan;
+      }
+    })
+    .onEnd(() => {
+      savedPinchScale.value = pinchScale.value;
+      // 1.1배 미만이면 원위치로 스냅
+      if (pinchScale.value < 1.1) {
+        const normalW = availableWidth / numDaysShared.value;
+        for (let i = 0; i < 7; i++) {
+          colWs[i].value = withTiming(
+            i < numDaysShared.value ? normalW : 0,
+            { duration: ZOOM_DURATION },
+          );
+        }
+        pinchScale.value = withTiming(1, { duration: ZOOM_DURATION });
+        savedPinchScale.value = 1;
+        zoomPanOffsetX.value = withTiming(0, { duration: ZOOM_DURATION });
+        savedZoomPanOffsetX.value = 0;
+      }
+    });
+
+  // 수평 팬 제스처 — 줌 상태에서 좌우 이동
+  const horizontalPanGesture = Gesture.Pan()
+    .activeOffsetX([-10, 10])  // 수평 10px 이상이어야 활성화
+    .failOffsetY([-8, 8])      // 수직 8px 먼저 감지 시 실패 → 수직 스크롤로 넘김
+    .onUpdate(e => {
+      if (pinchScale.value <= 1.01) return; // 줌 상태일 때만 동작
+      const maxPan = -(availableWidth * (pinchScale.value - 1));
+      zoomPanOffsetX.value = Math.max(
+        maxPan,
+        Math.min(0, savedZoomPanOffsetX.value + e.translationX),
+      );
+    })
+    .onEnd(() => {
+      savedZoomPanOffsetX.value = zoomPanOffsetX.value;
+    });
+
+  // 핀치 + 수평 팬을 동시에 처리
+  const columnsGesture = Gesture.Simultaneous(pinchGesture, horizontalPanGesture);
 
   function handleCellLongPress(dayIndex: number, hour: number) {
-    isLongPressActive.current = true;
     triggerHaptic();
     const hh = String(hour).padStart(2, '0');
     navigation.navigate('ScheduleForm', {
@@ -804,21 +864,6 @@ export default function MainScreen({ navigation, route }: Props) {
       defaultEndTime: `${hh}:50`,
       timetableId: activeTimetable?.id,
     });
-    setTimeout(() => {
-      isLongPressActive.current = false;
-    }, 300);
-  }
-
-  function handleCellPress(dayIndex: number) {
-    if (isLongPressActive.current) return;
-    const now = Date.now();
-    if (now - lastTapMs.current[dayIndex] < 300) {
-      // 더블탭 → 줌 토글
-      setZoomedDay(prev => (prev === dayIndex ? null : dayIndex));
-      lastTapMs.current[dayIndex] = 0;
-    } else {
-      lastTapMs.current[dayIndex] = now;
-    }
   }
 
   function handleSchedulePress(schedule: Schedule) {
@@ -937,30 +982,18 @@ export default function MainScreen({ navigation, route }: Props) {
           scrollEventThrottle={16}
           contentContainerStyle={{ paddingTop: topInset + HEADER_CONTENT_HEIGHT }}
         >
-          <View className="flex-row relative">
-            {/* 현재 시간선 — 전체 너비 */}
-            {nowMin >= startMin && nowMin <= endMin && (
-              <View
-                pointerEvents="none"
-                style={{
-                  position: 'absolute',
-                  top: (nowMin - startMin) * MIN_CELL_HEIGHT,
-                  left: TIME_COL_WIDTH,
-                  right: 0,
-                  height: 0.75,
-                  backgroundColor: '#EF4444',
-                  zIndex: 10,
-                }}
-              >
-                {/* 시간 라벨 컬럼 우측 끝에 시간 표시 */}
+          <View style={{ flexDirection: 'row' }} className="relative">
+            {/* 시간 라벨 — 핀치/팬 무관하게 고정 */}
+            <View className="relative w-[58px]">
+              {/* 현재 시각 배지 — 시간 라벨 우측에 표시 */}
+              {nowMin >= startMin && nowMin <= endMin && (
                 <View
+                  pointerEvents="none"
                   style={{
                     position: 'absolute',
-                    left: -TIME_COL_WIDTH + 4,
-                    top: -6,
-                    width: TIME_COL_WIDTH,
-                    alignItems: 'flex-end',
-                    paddingRight: 4,
+                    top: (nowMin - startMin) * MIN_CELL_HEIGHT - 6,
+                    right: 4,
+                    zIndex: 11,
                   }}
                 >
                   <View
@@ -977,10 +1010,7 @@ export default function MainScreen({ navigation, route }: Props) {
                     </Text>
                   </View>
                 </View>
-              </View>
-            )}
-            {/* 시간 라벨 */}
-            <View className="relative w-[58px]">
+              )}
               {timeLabels.map(label => {
                 const { ampm, hour } = formatTimeLabel(label);
                 return (
@@ -994,107 +1024,125 @@ export default function MainScreen({ navigation, route }: Props) {
               })}
             </View>
 
-            {/* 요일별 컬럼 */}
-            {ALL_DAYS.map((day, dayIndex) => (
-              <Animated.View
-                key={day}
-                className="relative border-l border-[#f3f4f6] overflow-visible"
-                style={[colStyles[dayIndex], { height: gridHeight }]}
-              >
-                {/* 그리드 인프라 — 클리핑 적용 */}
-                <View className="absolute inset-0 overflow-hidden">
-                  {/* 시간 구분선 */}
-                  {timeLabels.map((label, i) => (
-                    <View
-                      key={label}
-                      className="absolute left-0 right-0 border-t border-[#f3f4f6]"
-                      style={{ top: i * 60 * MIN_CELL_HEIGHT }}
-                    />
-                  ))}
-                  {/* 30분 구분선 */}
-                  {timeLabels.map((label, i) => (
-                    <View
-                      key={`h-${label}`}
-                      className="absolute left-0 right-0 border-t border-[#fafafa]"
-                      style={{
-                        top: i * 60 * MIN_CELL_HEIGHT + 30 * MIN_CELL_HEIGHT,
-                      }}
-                    />
-                  ))}
-                  {/* 빈 셀 (롱프레스=일정추가, 더블탭=줌) */}
-                  {timeLabels.slice(0, -1).map((label, i) => {
-                    const hour = timeToMinutes(label) / 60;
-                    return (
-                      <Pressable
-                        key={`cell-${label}`}
-                        className="absolute left-0 right-0"
-                        style={{
-                          top: i * 60 * MIN_CELL_HEIGHT,
-                          height: 60 * MIN_CELL_HEIGHT,
-                        }}
-                        onPress={() => handleCellPress(dayIndex)}
-                        onLongPress={() => handleCellLongPress(dayIndex, hour)}
-                        delayLongPress={400}
-                      />
-                    );
-                  })}
-                </View>
+            {/* 요일 컬럼 영역 — 핀치/팬 제스처 적용 */}
+            <View style={{ flex: 1, overflow: 'hidden' }}>
+              {/* 현재 시간선 — translateX와 함께 이동 */}
+              {nowMin >= startMin && nowMin <= endMin && (
+                <View
+                  pointerEvents="none"
+                  style={{
+                    position: 'absolute',
+                    top: (nowMin - startMin) * MIN_CELL_HEIGHT,
+                    left: 0,
+                    right: 0,
+                    height: 0.75,
+                    backgroundColor: '#EF4444',
+                    zIndex: 10,
+                  }}
+                />
+              )}
+              <GestureDetector gesture={columnsGesture}>
+                <Animated.View style={columnsContainerStyle}>
+                  {ALL_DAYS.map((day, dayIndex) => (
+                    <Animated.View
+                      key={day}
+                      className="relative border-l border-[#f3f4f6] overflow-visible"
+                      style={[colStyles[dayIndex], { height: gridHeight }]}
+                    >
+                      {/* 그리드 인프라 — 클리핑 적용 */}
+                      <View className="absolute inset-0 overflow-hidden">
+                        {/* 시간 구분선 */}
+                        {timeLabels.map((label, i) => (
+                          <View
+                            key={label}
+                            className="absolute left-0 right-0 border-t border-[#f3f4f6]"
+                            style={{ top: i * 60 * MIN_CELL_HEIGHT }}
+                          />
+                        ))}
+                        {/* 30분 구분선 */}
+                        {timeLabels.map((label, i) => (
+                          <View
+                            key={`h-${label}`}
+                            className="absolute left-0 right-0 border-t border-[#fafafa]"
+                            style={{
+                              top: i * 60 * MIN_CELL_HEIGHT + 30 * MIN_CELL_HEIGHT,
+                            }}
+                          />
+                        ))}
+                        {/* 빈 셀 — 롱프레스로 일정 추가 */}
+                        {timeLabels.slice(0, -1).map((label, i) => {
+                          const hour = timeToMinutes(label) / 60;
+                          return (
+                            <Pressable
+                              key={`cell-${label}`}
+                              className="absolute left-0 right-0"
+                              style={{
+                                top: i * 60 * MIN_CELL_HEIGHT,
+                                height: 60 * MIN_CELL_HEIGHT,
+                              }}
+                              onLongPress={() => handleCellLongPress(dayIndex, hour)}
+                              delayLongPress={400}
+                            />
+                          );
+                        })}
+                      </View>
 
-                {/* 알림 바 */}
-                {(zoomedDay === null || Math.abs(dayIndex - zoomedDay) <= 1) &&
-                  activeTimetable?.schedules
-                    .filter(
-                      s =>
-                        s.dayOfWeek.includes(dayIndex) &&
-                        s.notification?.enabled,
-                    )
-                    .map(schedule => {
-                      const { top } = getBlockStyle(schedule);
-                      const minutesBefore =
-                        schedule.notification!.minutesBefore;
-                      const barTop = top - minutesBefore * MIN_CELL_HEIGHT;
-                      if (barTop < 0) return null;
-                      return (
-                        <View
-                          key={`notif-${schedule.id}`}
-                          pointerEvents="none"
-                          style={{
-                            position: 'absolute',
-                            top: barTop,
-                            left: 1,
-                            right: 1,
-                            height: 2,
-                            backgroundColor: '#FACC15',
-                            borderRadius: 1,
-                            zIndex: 5,
-                          }}
-                        />
-                      );
-                    })}
+                      {/* 알림 바 — 항상 렌더 (zoomedDay 조건 제거) */}
+                      {activeTimetable?.schedules
+                        .filter(
+                          s =>
+                            s.dayOfWeek.includes(dayIndex) &&
+                            s.notification?.enabled,
+                        )
+                        .map(schedule => {
+                          const { top } = getBlockStyle(schedule);
+                          const minutesBefore =
+                            schedule.notification!.minutesBefore;
+                          const barTop = top - minutesBefore * MIN_CELL_HEIGHT;
+                          if (barTop < 0) return null;
+                          return (
+                            <View
+                              key={`notif-${schedule.id}`}
+                              pointerEvents="none"
+                              style={{
+                                position: 'absolute',
+                                top: barTop,
+                                left: 1,
+                                right: 1,
+                                height: 2,
+                                backgroundColor: '#FACC15',
+                                borderRadius: 1,
+                                zIndex: 5,
+                              }}
+                            />
+                          );
+                        })}
 
-                {/* 일정 블록 */}
-                {(zoomedDay === null || Math.abs(dayIndex - zoomedDay) <= 1) &&
-                  activeTimetable?.schedules
-                    .filter(s => s.dayOfWeek.includes(dayIndex))
-                    .map(schedule => {
-                      const { top, height } = getBlockStyle(schedule);
-                      return (
-                        <DraggableScheduleBlock
-                          key={schedule.id}
-                          schedule={schedule}
-                          top={top}
-                          height={height}
-                          startMin={startMin}
-                          endMin={endMin}
-                          scrollY={scrollY}
-                          onPress={() => handleSchedulePress(schedule)}
-                          onDragStart={() => setIsDraggingSchedule(true)}
-                          onDragEnd={handleScheduleDragEnd}
-                        />
-                      );
-                    })}
-              </Animated.View>
-            ))}
+                      {/* 일정 블록 — 항상 렌더 (zoomedDay 조건 제거) */}
+                      {activeTimetable?.schedules
+                        .filter(s => s.dayOfWeek.includes(dayIndex))
+                        .map(schedule => {
+                          const { top, height } = getBlockStyle(schedule);
+                          return (
+                            <DraggableScheduleBlock
+                              key={schedule.id}
+                              schedule={schedule}
+                              top={top}
+                              height={height}
+                              startMin={startMin}
+                              endMin={endMin}
+                              scrollY={scrollY}
+                              onPress={() => handleSchedulePress(schedule)}
+                              onDragStart={() => setIsDraggingSchedule(true)}
+                              onDragEnd={handleScheduleDragEnd}
+                            />
+                          );
+                        })}
+                    </Animated.View>
+                  ))}
+                </Animated.View>
+              </GestureDetector>
+            </View>
           </View>
         </Animated.ScrollView>
 
@@ -1120,14 +1168,6 @@ export default function MainScreen({ navigation, route }: Props) {
 
               {/* 버튼 */}
               <View className="flex-row gap-1 pt-[2px]">
-                {zoomedDay !== null && (
-                  <TouchableOpacity
-                    className="w-8 h-8 items-center justify-center"
-                    onPress={() => setZoomedDay(null)}
-                  >
-                    <Text className="text-[12px] text-[#6b7280]">전체</Text>
-                  </TouchableOpacity>
-                )}
                 <TouchableOpacity
                   className="w-8 h-8 items-center justify-center"
                   onPress={handleAddTimetable}
@@ -1162,43 +1202,45 @@ export default function MainScreen({ navigation, route }: Props) {
             </View>
           </View>
 
-          {/* 요일 헤더 */}
+          {/* 요일 헤더 — 바디 컬럼과 동일한 translateX 적용 */}
           <View className="flex-row border-b border-[#e5e7eb] h-[44px]">
             <View className="w-[58px]" />
-            {ALL_DAYS.map((day, i) => {
-              const headerVisible =
-                i < numDays &&
-                (zoomedDay === null || Math.abs(i - zoomedDay) <= 1);
-              return (
-                <Animated.View
-                  key={day}
-                  className="items-center justify-center overflow-hidden"
-                  style={colStyles[i]}
-                >
-                  {headerVisible && (
-                    <View
-                      className={`w-8 h-8 rounded-full items-center justify-center ${
-                        i === todayIndex ? 'bg-blue-500' : 'bg-transparent'
-                      }`}
+            <View style={{ flex: 1, overflow: 'hidden' }}>
+              <Animated.View style={columnsContainerStyle}>
+                {ALL_DAYS.map((day, i) => {
+                  const headerVisible = i < numDays;
+                  return (
+                    <Animated.View
+                      key={day}
+                      className="items-center justify-center overflow-hidden"
+                      style={colStyles[i]}
                     >
-                      <Text
-                        className={`text-[13px] font-semibold ${
-                          i === todayIndex
-                            ? 'text-white'
-                            : i === 5
-                              ? 'text-blue-500'
-                              : i === 6
-                                ? 'text-red-500'
-                                : 'text-[#374151]'
-                        }`}
-                      >
-                        {day}
-                      </Text>
-                    </View>
-                  )}
-                </Animated.View>
-              );
-            })}
+                      {headerVisible && (
+                        <View
+                          className={`w-8 h-8 rounded-full items-center justify-center ${
+                            i === todayIndex ? 'bg-blue-500' : 'bg-transparent'
+                          }`}
+                        >
+                          <Text
+                            className={`text-[13px] font-semibold ${
+                              i === todayIndex
+                                ? 'text-white'
+                                : i === 5
+                                  ? 'text-blue-500'
+                                  : i === 6
+                                    ? 'text-red-500'
+                                    : 'text-[#374151]'
+                            }`}
+                          >
+                            {day}
+                          </Text>
+                        </View>
+                      )}
+                    </Animated.View>
+                  );
+                })}
+              </Animated.View>
+            </View>
           </View>
         </HeaderContainer>
       </Animated.View>
