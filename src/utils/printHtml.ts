@@ -1,32 +1,36 @@
 import type { Timetable } from '@/types';
 import { timeToMinutes } from './time';
-import { ALL_DAYS, generateTimeLabels, formatTimeLabel } from '@/components/timetable/constants';
+import {
+    ALL_DAYS,
+    generateTimeLabels,
+    formatTimeLabel,
+} from '@/components/timetable/constants';
 
 export function generateTimetableHtml(timetable: Timetable): string {
-  const ttStart = timetable.timeRangeStart ?? '07:00';
-  const ttEnd = timetable.timeRangeEnd ?? '23:00';
-  const showWeekends = timetable.showWeekends ?? false;
-  const days = showWeekends ? ALL_DAYS : ALL_DAYS.slice(0, 5);
+    const ttStart = timetable.timeRangeStart ?? '07:00';
+    const ttEnd = timetable.timeRangeEnd ?? '23:00';
+    const showWeekends = timetable.showWeekends ?? false;
+    const days = showWeekends ? ALL_DAYS : ALL_DAYS.slice(0, 5);
 
-  const startMin = timeToMinutes(ttStart);
-  const endMin = timeToMinutes(ttEnd);
-  const totalMinutes = endMin - startMin;
+    const startMin = timeToMinutes(ttStart);
+    const endMin = timeToMinutes(ttEnd);
+    const totalMinutes = endMin - startMin;
 
-  // 시간 라벨 생성 (매 정시) — constants의 공유 함수 사용
-  const timeLabels = generateTimeLabels(ttStart, ttEnd);
+    // 시간 라벨 생성 (매 정시) — constants의 공유 함수 사용
+    const timeLabels = generateTimeLabels(ttStart, ttEnd);
 
-  // 요일별 스케줄 블록 HTML 생성
-  function renderDaySchedules(dayIndex: number): string {
-    const schedules = timetable.schedules.filter(s =>
-      s.dayOfWeek.includes(dayIndex),
-    );
-    return schedules
-      .map(s => {
-        const sMin = timeToMinutes(s.startTime);
-        const eMin = timeToMinutes(s.endTime);
-        const top = ((sMin - startMin) / totalMinutes) * 100;
-        const height = ((eMin - sMin) / totalMinutes) * 100;
-        return `<div style="
+    // 요일별 스케줄 블록 HTML 생성
+    function renderDaySchedules(dayIndex: number): string {
+        const schedules = timetable.schedules.filter(s =>
+            s.dayOfWeek.includes(dayIndex),
+        );
+        return schedules
+            .map(s => {
+                const sMin = timeToMinutes(s.startTime);
+                const eMin = timeToMinutes(s.endTime);
+                const top = ((sMin - startMin) / totalMinutes) * 100;
+                const height = ((eMin - sMin) / totalMinutes) * 100;
+                return `<div style="
           position: absolute;
           top: ${top}%;
           height: ${height}%;
@@ -38,14 +42,22 @@ export function generateTimetableHtml(timetable: Timetable): string {
           overflow: hidden;
           box-sizing: border-box;
         ">
-          <div style="font-size: 8px; font-weight: 700; color: #1f2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(s.title)}</div>
-          ${s.subTitle ? `<div style="font-size: 6px; color: #4b5563; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(s.subTitle)}</div>` : ''}
+          <div style="font-size: 8px; font-weight: 700; color: #1f2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(
+              s.title,
+          )}</div>
+          ${
+              s.subTitle
+                  ? `<div style="font-size: 6px; color: #4b5563; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(
+                        s.subTitle,
+                    )}</div>`
+                  : ''
+          }
         </div>`;
-      })
-      .join('\n');
-  }
+            })
+            .join('\n');
+    }
 
-  return `<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
@@ -138,22 +150,34 @@ export function generateTimetableHtml(timetable: Timetable): string {
     </div>
     <div class="grid">
       <div class="time-col">
-        ${timeLabels.map((label, i) => {
-          const top = timeLabels.length > 1 ? (i / (timeLabels.length - 1)) * 100 : 0;
-          const { ampm, hour } = formatTimeLabel(label);
-          return `<div class="time-label" style="top: ${top}%;">${ampm} ${hour}시</div>`;
-        }).join('\n')}
+        ${timeLabels
+            .map((label, i) => {
+                const top =
+                    timeLabels.length > 1
+                        ? (i / (timeLabels.length - 1)) * 100
+                        : 0;
+                const { ampm, hour } = formatTimeLabel(label);
+                return `<div class="time-label" style="top: ${top}%;">${ampm} ${hour}시</div>`;
+            })
+            .join('\n')}
       </div>
       <div class="days">
-        ${days.map((_, dayIndex) => {
-          return `<div class="day-col">
-            ${timeLabels.map((_, i) => {
-              const top = timeLabels.length > 1 ? (i / (timeLabels.length - 1)) * 100 : 0;
-              return `<div class="hour-line" style="top: ${top}%;"></div>`;
-            }).join('\n')}
+        ${days
+            .map((_, dayIndex) => {
+                return `<div class="day-col">
+            ${timeLabels
+                .map((_, i) => {
+                    const top =
+                        timeLabels.length > 1
+                            ? (i / (timeLabels.length - 1)) * 100
+                            : 0;
+                    return `<div class="hour-line" style="top: ${top}%;"></div>`;
+                })
+                .join('\n')}
             ${renderDaySchedules(dayIndex)}
           </div>`;
-        }).join('\n')}
+            })
+            .join('\n')}
       </div>
     </div>
   </div>
@@ -162,9 +186,9 @@ export function generateTimetableHtml(timetable: Timetable): string {
 }
 
 function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
 }
