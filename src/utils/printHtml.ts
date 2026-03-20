@@ -1,14 +1,6 @@
 import type { Timetable } from '@/types';
 import { timeToMinutes } from './time';
-import { ALL_DAYS, generateTimeLabels } from '@/components/timetable/constants';
-
-function formatTimeLabel(time: string): string {
-  const h = parseInt(time.split(':')[0], 10);
-  if (h === 0) return '오전 12시';
-  if (h === 12) return '오후 12시';
-  if (h < 12) return `오전 ${h}시`;
-  return `오후 ${h - 12}시`;
-}
+import { ALL_DAYS, generateTimeLabels, formatTimeLabel } from '@/components/timetable/constants';
 
 export function generateTimetableHtml(timetable: Timetable): string {
   const ttStart = timetable.timeRangeStart ?? '07:00';
@@ -148,7 +140,8 @@ export function generateTimetableHtml(timetable: Timetable): string {
       <div class="time-col">
         ${timeLabels.map((label, i) => {
           const top = timeLabels.length > 1 ? (i / (timeLabels.length - 1)) * 100 : 0;
-          return `<div class="time-label" style="top: ${top}%;">${formatTimeLabel(label)}</div>`;
+          const { ampm, hour } = formatTimeLabel(label);
+          return `<div class="time-label" style="top: ${top}%;">${ampm} ${hour}시</div>`;
         }).join('\n')}
       </div>
       <div class="days">
