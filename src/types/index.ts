@@ -22,6 +22,13 @@ export interface Timetable {
     timeRangeStart?: string; // 기본값: '07:00'
     timeRangeEnd?: string; // 기본값: '23:00'
     showWeekends?: boolean; // 기본값: false
+    holidaySync?: boolean; // 공휴일 연동 여부, 기본값: false
+}
+
+// 공공데이터포털 공휴일 정보
+export interface HolidayInfo {
+    date: string; // "20260101" 형식 (YYYYMMDD)
+    dateName: string; // "신정" 등 공휴일 명칭
 }
 
 export interface Settings {

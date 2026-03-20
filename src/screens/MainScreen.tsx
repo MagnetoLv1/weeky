@@ -37,6 +37,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { RouteProp } from '@react-navigation/native';
 import type { RootStackParamList } from '@/navigation/RootNavigator';
 import { getTimetables, saveTimetables } from '@/store/timetableStore';
+import { getHolidays, saveHolidays, hasHolidaysForYear } from '@/store/holidayStore';
+import { fetchHolidaysForYear } from '@/utils/holidayApi';
 import type { Timetable, Schedule } from '@/types';
 import { timeToMinutes, minutesToTime } from '@/utils/time';
 import { syncScheduleNotifications } from '@/utils/notification';
@@ -70,6 +72,8 @@ export default function MainScreen({ navigation, route }: Props) {
     const [timetables, setTimetables] = useState<Timetable[]>([]);
     const [activeIndex, setActiveIndex] = useState(0);
     const [isDraggingSchedule, setIsDraggingSchedule] = useState(false);
+    // 공휴일 날짜 집합 — "YYYYMMDD" 형식 문자열
+    const [holidayDates, setHolidayDates] = useState<Set<string>>(new Set());
     const [addModalVisible, setAddModalVisible] = useState(false);
     const bottomSheetRef = useRef<BottomSheet>(null);
     const [newTimetableName, setNewTimetableName] = useState('');
@@ -135,10 +139,30 @@ export default function MainScreen({ navigation, route }: Props) {
 
     useFocusEffect(
         useCallback(() => {
-            setTimetables(getTimetables());
+            const loaded = getTimetables();
+            setTimetables(loaded);
             const idx = route.params?.activeIndex;
             if (idx !== undefined) {
                 setActiveIndex(idx);
+            }
+
+            // 공휴일 연동: MMKV 캐시 로드 및 미보유 시 백그라운드 다운로드
+            const active = loaded[idx ?? 0] ?? loaded[0];
+            if (active?.holidaySync) {
+                const year = new Date().getFullYear();
+                const stored = getHolidays(year);
+                setHolidayDates(new Set(stored.map(h => h.date)));
+
+                if (!hasHolidaysForYear(year)) {
+                    fetchHolidaysForYear(year)
+                        .then(holidays => {
+                            saveHolidays(year, holidays);
+                            setHolidayDates(new Set(holidays.map(h => h.date)));
+                        })
+                        .catch(() => {}); // 실패 무시 (백그라운드)
+                }
+            } else {
+                setHolidayDates(new Set());
             }
         }, [route.params?.activeIndex]),
     );
@@ -147,6 +171,29 @@ export default function MainScreen({ navigation, route }: Props) {
     const ttStart = activeTimetable?.timeRangeStart ?? '07:00';
     const ttEnd = activeTimetable?.timeRangeEnd ?? '23:00';
     const ttShowWeekends = activeTimetable?.showWeekends ?? false;
+    const ttHolidaySync = activeTimetable?.holidaySync ?? false;
+
+    /**
+     * 현재 주의 dayIndex(0=월)에 해당하는 날짜를 "YYYYMMDD" 형식으로 반환
+     * todayIndex 기준으로 offset 계산
+     */
+    function getWeekDate(dayIndex: number): string {
+        const today = new Date();
+        const diff = dayIndex - todayIndex;
+        const d = new Date(today);
+        d.setDate(today.getDate() + diff);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}${m}${day}`;
+    }
+    // 오늘이 공휴일인지 여부 (현재 시간 라인/배지 색상에 사용)
+    const isTodayHoliday =
+        ttHolidaySync && holidayDates.has(getWeekDate(todayIndex));
+    const nowLineColor = isTodayHoliday ? '#d1d5db' : '#EF4444';
+    // 주말 표시 OFF이고 오늘이 토/일이면 현재 시간 표시 숨김
+    const showNowIndicator = ttShowWeekends || todayIndex < 5;
+
     const days = ttShowWeekends ? ALL_DAYS : ALL_DAYS.slice(0, 5);
     const numDays = days.length;
     const timeLabels = generateTimeLabels(ttStart, ttEnd);
@@ -393,7 +440,7 @@ export default function MainScreen({ navigation, route }: Props) {
                         {/* 시간 라벨 — 핀치/팬 무관하게 고정 */}
                         <View className="relative w-[58px]">
                             {/* 현재 시각 배지 — 시간 라벨 우측에 표시 */}
-                            {nowMin >= startMin && nowMin <= endMin && (
+                            {showNowIndicator && nowMin >= startMin && nowMin <= endMin && (
                                 <View
                                     pointerEvents="none"
                                     style={{
@@ -408,7 +455,7 @@ export default function MainScreen({ navigation, route }: Props) {
                                 >
                                     <View
                                         style={{
-                                            backgroundColor: '#EF4444',
+                                            backgroundColor: nowLineColor,
                                             borderRadius: 7,
                                             paddingHorizontal: 4,
                                             paddingVertical: 1,
@@ -449,7 +496,7 @@ export default function MainScreen({ navigation, route }: Props) {
                         {/* 요일 컬럼 영역 — 핀치/팬 제스처 적용 */}
                         <View style={{ flex: 1, overflow: 'hidden' }}>
                             {/* 현재 시간선 — translateX와 함께 이동 */}
-                            {nowMin >= startMin && nowMin <= endMin && (
+                            {showNowIndicator && nowMin >= startMin && nowMin <= endMin && (
                                 <View
                                     pointerEvents="none"
                                     style={{
@@ -460,7 +507,7 @@ export default function MainScreen({ navigation, route }: Props) {
                                         left: 0,
                                         right: 0,
                                         height: 0.75,
-                                        backgroundColor: '#EF4444',
+                                        backgroundColor: nowLineColor,
                                         zIndex: 10,
                                     }}
                                 />
@@ -727,28 +774,43 @@ export default function MainScreen({ navigation, route }: Props) {
                                             style={colStyles[i]}
                                         >
                                             {headerVisible && (
-                                                <View
-                                                    className={cn(
-                                                        'w-8 h-8 rounded-full items-center justify-center',
-                                                        i === todayIndex &&
-                                                            'bg-blue-500',
-                                                    )}
-                                                >
-                                                    <Text
-                                                        className={cn(
-                                                            'text-[13px] font-semibold',
-                                                            i === todayIndex
-                                                                ? 'text-white'
-                                                                : i === 5
-                                                                ? 'text-blue-500'
-                                                                : i === 6
-                                                                ? 'text-red-500'
-                                                                : 'text-[#374151]',
-                                                        )}
-                                                    >
-                                                        {day}
-                                                    </Text>
-                                                </View>
+                                                (() => {
+                                                    const isToday = i === todayIndex;
+                                                    const isHoliday =
+                                                        ttHolidaySync &&
+                                                        holidayDates.has(
+                                                            getWeekDate(i),
+                                                        );
+                                                    return (
+                                                        <View
+                                                            className={cn(
+                                                                'w-8 h-8 items-center justify-center',
+                                                                isHoliday
+                                                                    ? 'rounded bg-red-100'
+                                                                    : isToday
+                                                                    ? 'rounded-full bg-blue-500'
+                                                                    : '',
+                                                            )}
+                                                        >
+                                                            <Text
+                                                                className={cn(
+                                                                    'text-[13px] font-semibold',
+                                                                    isHoliday
+                                                                        ? 'text-red-500'
+                                                                        : isToday
+                                                                        ? 'text-white'
+                                                                        : i === 5
+                                                                        ? 'text-blue-500'
+                                                                        : i === 6
+                                                                        ? 'text-red-500'
+                                                                        : 'text-[#374151]',
+                                                                )}
+                                                            >
+                                                                {day}
+                                                            </Text>
+                                                        </View>
+                                                    );
+                                                })()
                                             )}
                                         </Animated.View>
                                     );

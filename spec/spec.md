@@ -46,6 +46,7 @@
 - [x] 이미지 공유 기능
 - [x] 멀티 시간표
 - [x] 화면 줌 기능
+- [x] 공휴일 연동
 
 ---
 
@@ -55,7 +56,7 @@
 
 **보여줄 것**
 
-- 상단: 요일 헤더 (기본 월~금, 설정에서 주말 표시 ON 시 월~일), 오늘 날짜 강조 표시 (파란 원)
+- 상단: 요일 헤더 (기본 월~금, 설정에서 주말 표시 ON 시 월~일), 오늘 날짜 강조 표시 (파란 원), 공휴일 연동 ON 시 공휴일 요일에 빨간 라운드 사각형 표기
 - 좌측: 시간 타임라인 (세로, HH:MM 형식)
 - 중앙: 7열 그리드 (요일별 일정 블록 표시)
 - 일정 블록에 알림이 설정된 경우 🔔 아이콘 표시
@@ -186,7 +187,7 @@ barTop = blockTop − (minutesBefore × MIN_CELL_HEIGHT)
 - [x] 설정 화면은 현재 보고 있는 시간표 기준 (앱 전역 설정 아님)
 - [x] 설정 화면에서 현재 시간표 이름 변경(✏️), 시간 범위, 주말 표시 설정 가능
 - [x] 시간표 삭제: 2개 이상일 때만 노출, Alert 확인 후 삭제
-- [x] 각 시간표는 독립적인 timeRangeStart/End, showWeekends 보유
+- [x] 각 시간표는 독립적인 timeRangeStart/End, showWeekends, holidaySync 보유
 
 **전환 애니메이션**
 
@@ -229,6 +230,23 @@ barTop = blockTop − (minutesBefore × MIN_CELL_HEIGHT)
 
 ---
 
+### 공휴일 연동
+
+**동작**
+
+- 설정 화면 "공휴일 연동" 토글 ON → 공공데이터포털 API에서 해당 연도 12개월 공휴일 데이터를 병렬 다운로드
+- 데이터는 MMKV에 `holidays-{year}` 키로 캐시 (앱 재시작 시 재다운로드 없음)
+- 앱 포커스 시 연도 데이터가 없으면 백그라운드로 자동 다운로드
+- 메인 화면 요일 헤더: 공휴일인 요일에 라운드 사각형(`rounded`) + 빨간 텍스트 표기
+- 오늘이면서 공휴일인 경우 공휴일 스타일(빨간 라운드 사각형) 우선 적용
+- 토글 OFF 시 공휴일 표기 즉시 제거
+
+**iOS ATS**
+
+- `apis.data.go.kr` (HTTP)에 대한 NSExceptionDomain 추가 (Info.plist)
+
+---
+
 ## 5. 데이터 구조
 
 ```
@@ -237,6 +255,12 @@ Timetable {
   name: string           // 시간표 이름 (예: "학교", "학원")
   order: number          // 탭 순서
   schedules: Schedule[]  // 해당 시간표의 일정 목록
+  holidaySync?: boolean  // 공휴일 연동 여부 (기본 false)
+}
+
+HolidayInfo {
+  date: string           // "20260101" 형식 (YYYYMMDD)
+  dateName: string       // 공휴일 명칭 (예: "신정")
 }
 
 Schedule {

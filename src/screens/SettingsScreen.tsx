@@ -16,6 +16,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { RootStackParamList } from '@/navigation/RootNavigator';
 import { getTimetables, saveTimetables } from '@/store/timetableStore';
+import { hasHolidaysForYear, saveHolidays } from '@/store/holidayStore';
+import { fetchHolidaysForYear } from '@/utils/holidayApi';
 import { generateTimetableHtml } from '@/utils/printHtml';
 import type { Timetable } from '@/types';
 import { cancelScheduleNotifications } from '@/utils/notification';
@@ -62,6 +64,7 @@ export default function SettingsScreen({ navigation, route }: Props) {
     const ttStart = current?.timeRangeStart ?? '07:00';
     const ttEnd = current?.timeRangeEnd ?? '23:00';
     const ttShowWeekends = current?.showWeekends ?? false;
+    const ttHolidaySync = current?.holidaySync ?? false;
 
     function updateCurrent(patch: Partial<Timetable>) {
         const updated = timetables.map(tt =>
@@ -245,6 +248,34 @@ export default function SettingsScreen({ navigation, route }: Props) {
                                 onValueChange={v =>
                                     updateCurrent({ showWeekends: v })
                                 }
+                            />
+                        )}
+                    />
+                    <Divider />
+                    <List.Item
+                        title="공휴일 연동"
+                        description="요일 헤더에 공휴일 표기"
+                        right={() => (
+                            <Switch
+                                value={ttHolidaySync}
+                                onValueChange={async v => {
+                                    updateCurrent({ holidaySync: v });
+                                    // 토글 ON 시 해당 연도 데이터 없으면 즉시 다운로드
+                                    if (v) {
+                                        const year = new Date().getFullYear();
+                                        if (!hasHolidaysForYear(year)) {
+                                            try {
+                                                const holidays =
+                                                    await fetchHolidaysForYear(
+                                                        year,
+                                                    );
+                                                saveHolidays(year, holidays);
+                                            } catch {
+                                                // 실패 무시
+                                            }
+                                        }
+                                    }
+                                }}
                             />
                         )}
                     />
