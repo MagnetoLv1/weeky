@@ -4,8 +4,8 @@ import { View, Text, Platform, StatusBar } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronDown } from 'lucide-react-native';
-import { cn } from '../../utils/cn';
-import type { Timetable } from '../../types';
+import { cn } from '@/utils/cn';
+import type { Timetable } from '@/types';
 import {
   ALL_DAYS,
   TIME_COL_WIDTH,
@@ -16,7 +16,7 @@ import {
   formatTimeLabel,
 } from './constants';
 import { HeaderContainer } from './HeaderContainer';
-import { timeToMinutes } from '../../utils/time';
+import { timeToMinutes } from '@/utils/time';
 
 // 타이틀 영역 48px + 요일 헤더 44px — MainScreen의 ScrollView paddingTop과 동일해야 함
 export const HEADER_CONTENT_HEIGHT = 92;

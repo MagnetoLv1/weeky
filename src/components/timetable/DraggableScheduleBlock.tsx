@@ -8,9 +8,9 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import type { Schedule } from '../../types';
+import type { Schedule } from '@/types';
 import { MIN_CELL_HEIGHT, triggerHaptic } from './constants';
-import { timeToMinutes } from '../../utils/time';
+import { timeToMinutes } from '@/utils/time';
 
 export type DraggableBlockProps = {
   schedule: Schedule;

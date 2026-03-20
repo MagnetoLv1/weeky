@@ -5,7 +5,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { cn } from '../utils/cn';
+import { cn } from '@/utils/cn';
 import {
   View,
   Text,
@@ -26,7 +26,7 @@ import ContextMenu from 'react-native-context-menu-view';
 import RNPrint from 'react-native-print';
 import Share from 'react-native-share';
 import { captureRef } from 'react-native-view-shot';
-import { generateTimetableHtml } from '../utils/printHtml';
+import { generateTimetableHtml } from '@/utils/printHtml';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -39,11 +39,11 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { RouteProp } from '@react-navigation/native';
-import type { RootStackParamList } from '../navigation/RootNavigator';
-import { getTimetables, saveTimetables } from '../store/timetableStore';
-import type { Timetable, Schedule } from '../types';
-import { timeToMinutes, minutesToTime } from '../utils/time';
-import { syncScheduleNotifications } from '../utils/notification';
+import type { RootStackParamList } from '@/navigation/RootNavigator';
+import { getTimetables, saveTimetables } from '@/store/timetableStore';
+import type { Timetable, Schedule } from '@/types';
+import { timeToMinutes, minutesToTime } from '@/utils/time';
+import { syncScheduleNotifications } from '@/utils/notification';
 import {
   ALL_DAYS,
   TIME_COL_WIDTH,
@@ -55,12 +55,12 @@ import {
   generateTimeLabels,
   formatTimeLabel,
   triggerHaptic,
-} from '../components/timetable/constants';
-import { HeaderContainer } from '../components/timetable/HeaderContainer';
-import { renderBackdrop } from '../components/timetable/renderBackdrop';
-import { DraggableScheduleBlock } from '../components/timetable/DraggableScheduleBlock';
-import { TimetableShareView } from '../components/timetable/TimetableShareView';
-import { StaticTimetableGrid, HEADER_CONTENT_HEIGHT } from '../components/timetable/StaticTimetableGrid';
+} from '@/components/timetable/constants';
+import { HeaderContainer } from '@/components/timetable/HeaderContainer';
+import { renderBackdrop } from '@/components/timetable/renderBackdrop';
+import { DraggableScheduleBlock } from '@/components/timetable/DraggableScheduleBlock';
+import { TimetableShareView } from '@/components/timetable/TimetableShareView';
+import { StaticTimetableGrid, HEADER_CONTENT_HEIGHT } from '@/components/timetable/StaticTimetableGrid';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Main'>;

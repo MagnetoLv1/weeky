@@ -14,11 +14,11 @@ import RNPrint from 'react-native-print';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
-import type { RootStackParamList } from '../navigation/RootNavigator';
-import { getTimetables, saveTimetables } from '../store/timetableStore';
-import { generateTimetableHtml } from '../utils/printHtml';
-import type { Timetable } from '../types';
-import { cancelScheduleNotifications } from '../utils/notification';
+import type { RootStackParamList } from '@/navigation/RootNavigator';
+import { getTimetables, saveTimetables } from '@/store/timetableStore';
+import { generateTimetableHtml } from '@/utils/printHtml';
+import type { Timetable } from '@/types';
+import { cancelScheduleNotifications } from '@/utils/notification';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Settings'>;

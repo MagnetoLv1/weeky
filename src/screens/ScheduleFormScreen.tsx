@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { cn } from '../utils/cn';
+import { cn } from '@/utils/cn';
 import {
   View,
   Text,
@@ -17,10 +17,10 @@ import { Switch } from 'react-native-paper';
 import { Check, ChevronRight } from 'lucide-react-native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
-import type { RootStackParamList } from '../navigation/RootNavigator';
-import { getTimetables, saveTimetables } from '../store/timetableStore';
-import type { Schedule } from '../types';
-import { syncScheduleNotifications, cancelScheduleNotifications } from '../utils/notification';
+import type { RootStackParamList } from '@/navigation/RootNavigator';
+import { getTimetables, saveTimetables } from '@/store/timetableStore';
+import type { Schedule } from '@/types';
+import { syncScheduleNotifications, cancelScheduleNotifications } from '@/utils/notification';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'ScheduleForm'>;

@@ -1,6 +1,6 @@
 // 시간표 컴포넌트 공유 상수 및 헬퍼 함수
 import { Dimensions } from 'react-native';
-import { timeToMinutes } from '../../utils/time';
+import { timeToMinutes } from '@/utils/time';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 
 export const ALL_DAYS = ['월', '화', '수', '목', '금', '토', '일'];

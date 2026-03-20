@@ -1,7 +1,7 @@
 // 공유용 정적 시간표 뷰 — 전체 시간표를 A4 비율 이미지로 캡처
 import React from 'react';
 import { View, Text } from 'react-native';
-import type { Timetable } from '../../types';
+import type { Timetable } from '@/types';
 import {
   ALL_DAYS,
   TIME_COL_WIDTH,
@@ -9,7 +9,7 @@ import {
   generateTimeLabels,
   formatTimeLabel,
 } from './constants';
-import { timeToMinutes } from '../../utils/time';
+import { timeToMinutes } from '@/utils/time';
 
 // A4 비율(210:297)에 맞게 이미지 높이 계산
 const A4_RATIO = 297 / 210;

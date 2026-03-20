@@ -1,9 +1,9 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import MainScreen from '../screens/MainScreen';
-import ScheduleFormScreen from '../screens/ScheduleFormScreen';
-import SettingsScreen from '../screens/SettingsScreen';
-import type { Schedule } from '../types';
+import MainScreen from '@/screens/MainScreen';
+import ScheduleFormScreen from '@/screens/ScheduleFormScreen';
+import SettingsScreen from '@/screens/SettingsScreen';
+import type { Schedule } from '@/types';
 
 export type RootStackParamList = {
   Main: { activeIndex?: number } | undefined;

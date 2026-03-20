@@ -6,7 +6,7 @@ import notifee, {
   type TimestampTrigger,
 } from '@notifee/react-native';
 import { Platform } from 'react-native';
-import type { Schedule, Timetable } from '../types';
+import type { Schedule, Timetable } from '@/types';
 
 const CHANNEL_ID = 'weeky-schedule';
 

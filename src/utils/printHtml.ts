@@ -1,6 +1,6 @@
-import type { Timetable } from '../types';
+import type { Timetable } from '@/types';
 import { timeToMinutes } from './time';
-import { ALL_DAYS, generateTimeLabels } from '../components/timetable/constants';
+import { ALL_DAYS, generateTimeLabels } from '@/components/timetable/constants';
 
 function formatTimeLabel(time: string): string {
   const h = parseInt(time.split(':')[0], 10);
