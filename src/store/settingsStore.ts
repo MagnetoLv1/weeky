@@ -1,5 +1,5 @@
 import { storage } from './mmkv';
-import type { Settings } from '../types';
+import type { Settings } from '@/types';
 
 const KEY = 'settings';
 

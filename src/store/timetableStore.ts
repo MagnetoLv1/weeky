@@ -1,5 +1,5 @@
 import { storage } from './mmkv';
-import type { Timetable } from '../types';
+import type { Timetable } from '@/types';
 
 const KEY = 'timetables';
 
