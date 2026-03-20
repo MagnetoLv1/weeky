@@ -13,6 +13,13 @@
 - 작성한 코드에 중요한 내용을 요약해서 주석을 달아야 한다
 - 스타일링은 NativeWind v4 (Tailwind CSS className) 사용을 원칙으로 한다.
 
+### 컴포넌트 분리 원칙
+
+- 파일 하나에 컴포넌트 하나를 원칙으로 한다.
+- 한 파일에 여러 컴포넌트가 생기면 `src/components/` 하위 적절한 디렉토리로 분리한다.
+- 공유 상수·헬퍼 함수는 컴포넌트 파일이 아닌 별도 `constants.ts` 또는 `src/utils/`에 위치시킨다.
+- 특정 컴포넌트 전용 상수(A4_RATIO 등)는 해당 컴포넌트 파일 내부에 위치해도 된다.
+
 ### 의존성 설치 규칙
 
 - `react-native-mmkv` 설치 시 `react-native-nitro-modules`도 함께 설치.
