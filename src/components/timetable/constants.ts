@@ -8,7 +8,8 @@ export const TIME_COL_WIDTH = 58;
 export const MIN_CELL_HEIGHT = 1.5; // 10분 = 1.5dp
 export const SCREEN_WIDTH = Dimensions.get('window').width;
 export const ZOOM_DURATION = 250;
-export const SLIDE_DURATION = 300;
+// 타이틀 영역 48px + 요일 헤더 44px — ScrollView paddingTop과 동일해야 함
+export const HEADER_CONTENT_HEIGHT = 92;
 
 // 오늘 요일 인덱스 (월=0 ~ 일=6)
 export function getTodayIndex(): number {

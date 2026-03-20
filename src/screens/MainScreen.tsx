@@ -1,7 +1,6 @@
 import React, {
     useCallback,
     useEffect,
-    useLayoutEffect,
     useRef,
     useState,
 } from 'react';
@@ -30,7 +29,6 @@ import Animated, {
     useAnimatedStyle,
     useAnimatedScrollHandler,
     withTiming,
-    runOnJS,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -48,7 +46,7 @@ import {
     MIN_CELL_HEIGHT,
     SCREEN_WIDTH,
     ZOOM_DURATION,
-    SLIDE_DURATION,
+    HEADER_CONTENT_HEIGHT,
     getTodayIndex,
     generateTimeLabels,
     formatTimeLabel,
@@ -58,10 +56,6 @@ import { HeaderContainer } from '@/components/timetable/HeaderContainer';
 import { renderBackdrop } from '@/components/timetable/renderBackdrop';
 import { DraggableScheduleBlock } from '@/components/timetable/DraggableScheduleBlock';
 import { TimetableShareView } from '@/components/timetable/TimetableShareView';
-import {
-    StaticTimetableGrid,
-    HEADER_CONTENT_HEIGHT,
-} from '@/components/timetable/StaticTimetableGrid';
 
 type Props = {
     navigation: NativeStackNavigationProp<RootStackParamList, 'Main'>;
@@ -88,9 +82,6 @@ export default function MainScreen({ navigation, route }: Props) {
     const scrollRef = useRef<any>(null);
     const viewShotRef = useRef<View>(null);
     const shareViewRef = useRef<View>(null);
-
-    // 슬라이드 전환 애니메이션
-    const translateX = useSharedValue(0);
 
     // 스크롤 위치 (sticky 라벨용)
     const scrollY = useSharedValue(0);
@@ -136,22 +127,10 @@ export default function MainScreen({ navigation, route }: Props) {
         colStyle6,
     ];
 
-    const slideStyle = useAnimatedStyle(() => ({
-        transform: [{ translateX: translateX.value }],
-    }));
-
     // 핀치/팬 제스처로 적용되는 요일 컬럼 컨테이너 translateX
     const columnsContainerStyle = useAnimatedStyle(() => ({
         transform: [{ translateX: zoomPanOffsetX.value }],
         flexDirection: 'row' as const,
-    }));
-
-    const prevSlideStyle = useAnimatedStyle(() => ({
-        transform: [{ translateX: translateX.value - SCREEN_WIDTH }],
-    }));
-
-    const nextSlideStyle = useAnimatedStyle(() => ({
-        transform: [{ translateX: translateX.value + SCREEN_WIDTH }],
     }));
 
     useFocusEffect(
@@ -227,96 +206,6 @@ export default function MainScreen({ navigation, route }: Props) {
         savedZoomPanOffsetX.value = 0;
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [numDays, availableWidth]);
-
-    // 스와이프 전환 중 인접 시간표 데이터를 프리징하여 깜빡임 방지
-    const pendingTranslateXReset = useRef(false);
-    const frozenAdjacentRef = useRef<{
-        prev: Timetable | null;
-        next: Timetable | null;
-    } | null>(null);
-
-    function handleSwipeAnimationDone(oldIndex: number, newIndex: number) {
-        // activeIndex 변경 전에 현재 인접 데이터를 프리징
-        // → translateX 리셋 전까지 정적 그리드가 올바른 시간표를 계속 표시
-        frozenAdjacentRef.current = {
-            prev: oldIndex > 0 ? timetables[oldIndex - 1] : null,
-            next:
-                oldIndex < timetables.length - 1
-                    ? timetables[oldIndex + 1]
-                    : null,
-        };
-        pendingTranslateXReset.current = true;
-        setActiveIndex(newIndex);
-    }
-
-    // useLayoutEffect: React 커밋 직후(화면 페인트 전)에 translateX 리셋
-    useLayoutEffect(() => {
-        if (pendingTranslateXReset.current) {
-            pendingTranslateXReset.current = false;
-            translateX.value = 0;
-            frozenAdjacentRef.current = null;
-        }
-    });
-
-    // 인접 시간표: 프리징된 데이터 우선, 없으면 현재 activeIndex 기준
-    const prevTimetable =
-        frozenAdjacentRef.current?.prev ??
-        (activeIndex > 0 ? timetables[activeIndex - 1] : null);
-    const nextTimetable =
-        frozenAdjacentRef.current?.next ??
-        (activeIndex < timetables.length - 1
-            ? timetables[activeIndex + 1]
-            : null);
-
-    // 타이틀 영역 스와이프 → 시간표 전환
-    const panGesture = Gesture.Pan()
-        .activeOffsetX([-15, 15])
-        .onChange(e => {
-            // 끝에 도달하면 저항감 (rubber-band)
-            const canGoLeft = activeIndex < timetables.length - 1;
-            const canGoRight = activeIndex > 0;
-            if (
-                (e.translationX < 0 && !canGoLeft) ||
-                (e.translationX > 0 && !canGoRight)
-            ) {
-                translateX.value = e.translationX * 0.2;
-            } else {
-                translateX.value = e.translationX;
-            }
-        })
-        .onEnd(e => {
-            const isSwipe =
-                Math.abs(e.translationX) > 40 || Math.abs(e.velocityX) > 400;
-            if (
-                isSwipe &&
-                e.translationX < 0 &&
-                activeIndex < timetables.length - 1
-            ) {
-                translateX.value = withTiming(
-                    -SCREEN_WIDTH,
-                    { duration: SLIDE_DURATION },
-                    () => {
-                        runOnJS(handleSwipeAnimationDone)(
-                            activeIndex,
-                            activeIndex + 1,
-                        );
-                    },
-                );
-            } else if (isSwipe && e.translationX > 0 && activeIndex > 0) {
-                translateX.value = withTiming(
-                    SCREEN_WIDTH,
-                    { duration: SLIDE_DURATION },
-                    () => {
-                        runOnJS(handleSwipeAnimationDone)(
-                            activeIndex,
-                            activeIndex - 1,
-                        );
-                    },
-                );
-            } else {
-                translateX.value = withTiming(0, { duration: 200 });
-            }
-        });
 
     // 핀치 줌 제스처 — 전체 요일 균등 확대 (최대 2배)
     const pinchGesture = Gesture.Pinch()
@@ -479,24 +368,12 @@ export default function MainScreen({ navigation, route }: Props) {
         saveTimetables(updated);
         setTimetables(updated);
         setAddModalVisible(false);
-        translateX.value = SCREEN_WIDTH;
         setActiveIndex(updated.length - 1);
-        translateX.value = withTiming(0, { duration: SLIDE_DURATION });
     }
 
     return (
         <View className="flex-1 bg-white" style={{ overflow: 'hidden' }}>
-            {/* 인접 시간표: 이전 */}
-            {prevTimetable && (
-                <Animated.View
-                    style={[StyleSheet.absoluteFill, prevSlideStyle]}
-                >
-                    <StaticTimetableGrid timetable={prevTimetable} />
-                </Animated.View>
-            )}
-
-            {/* 슬라이드 컨테이너 — ScrollView와 BlurView를 같은 surface에 배치 */}
-            <Animated.View style={[{ flex: 1 }, slideStyle]}>
+            <View className="flex-1">
                 {/* 시간표 그리드 — contentContainerStyle로 헤더 높이만큼 아래서 시작 */}
                 <Animated.ScrollView
                     collapsable={false}
@@ -754,26 +631,24 @@ export default function MainScreen({ navigation, route }: Props) {
                         style={{ paddingTop: topInset }}
                     >
                         <View className="flex-row items-start justify-between min-h-[40px]">
-                            {/* 타이틀 + 스와이프 영역 */}
-                            <GestureDetector gesture={panGesture}>
-                                <View className="flex-1 py-1">
-                                    <TouchableOpacity
-                                        className="flex-row items-center gap-[4px]"
-                                        onPress={() =>
-                                            bottomSheetRef.current?.expand()
-                                        }
-                                        activeOpacity={0.6}
-                                    >
-                                        <Text className="text-[18px] font-bold text-[#111827]">
-                                            {activeTimetable?.name ?? '시간표'}
-                                        </Text>
-                                        <ChevronDown
-                                            size={16}
-                                            color="#9ca3af"
-                                        />
-                                    </TouchableOpacity>
-                                </View>
-                            </GestureDetector>
+                            {/* 타이틀 영역 */}
+                            <View className="flex-1 py-1">
+                                <TouchableOpacity
+                                    className="flex-row items-center gap-[4px]"
+                                    onPress={() =>
+                                        bottomSheetRef.current?.expand()
+                                    }
+                                    activeOpacity={0.6}
+                                >
+                                    <Text className="text-[18px] font-bold text-[#111827]">
+                                        {activeTimetable?.name ?? '시간표'}
+                                    </Text>
+                                    <ChevronDown
+                                        size={16}
+                                        color="#9ca3af"
+                                    />
+                                </TouchableOpacity>
+                            </View>
 
                             {/* 버튼 */}
                             <View className="flex-row gap-1 pt-[2px]">
@@ -882,16 +757,7 @@ export default function MainScreen({ navigation, route }: Props) {
                         </View>
                     </View>
                 </HeaderContainer>
-            </Animated.View>
-
-            {/* 인접 시간표: 다음 */}
-            {nextTimetable && (
-                <Animated.View
-                    style={[StyleSheet.absoluteFill, nextSlideStyle]}
-                >
-                    <StaticTimetableGrid timetable={nextTimetable} />
-                </Animated.View>
-            )}
+            </View>
 
             {/* 시간표 선택 바텀시트 */}
             <BottomSheet
@@ -911,13 +777,7 @@ export default function MainScreen({ navigation, route }: Props) {
                             className="flex-row items-center px-5 py-3"
                             onPress={() => {
                                 if (i !== activeIndex) {
-                                    const direction = i > activeIndex ? -1 : 1;
-                                    translateX.value =
-                                        -direction * SCREEN_WIDTH;
                                     setActiveIndex(i);
-                                    translateX.value = withTiming(0, {
-                                        duration: SLIDE_DURATION,
-                                    });
                                 }
                                 bottomSheetRef.current?.close();
                             }}
