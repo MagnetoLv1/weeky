@@ -1,7 +1,6 @@
 import type { Timetable } from '../types';
 import { timeToMinutes } from './time';
-
-const ALL_DAYS = ['월', '화', '수', '목', '금', '토', '일'];
+import { ALL_DAYS, generateTimeLabels } from '../components/timetable/constants';
 
 function formatTimeLabel(time: string): string {
   const h = parseInt(time.split(':')[0], 10);
@@ -21,12 +20,8 @@ export function generateTimetableHtml(timetable: Timetable): string {
   const endMin = timeToMinutes(ttEnd);
   const totalMinutes = endMin - startMin;
 
-  // 시간 라벨 생성 (매 정시)
-  const timeLabels: string[] = [];
-  for (let m = startMin; m <= endMin; m += 60) {
-    const h = Math.floor(m / 60);
-    timeLabels.push(`${String(h).padStart(2, '0')}:00`);
-  }
+  // 시간 라벨 생성 (매 정시) — constants의 공유 함수 사용
+  const timeLabels = generateTimeLabels(ttStart, ttEnd);
 
   // 요일별 스케줄 블록 HTML 생성
   function renderDaySchedules(dayIndex: number): string {
