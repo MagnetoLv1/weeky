@@ -143,12 +143,29 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
         setTimePickerVisible(true);
     }
 
+    // 시간 문자열(HH:mm)에 분을 더해 새 시간 문자열 반환
+    function addMinutesToTime(time: string, minutes: number): string {
+        const [h, m] = time.split(':').map(Number);
+        const total = h * 60 + m + minutes;
+        const newH = Math.floor(total / 60) % 24;
+        const newM = total % 60;
+        return `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
+    }
+
+    // 시작 시간 변경 시 종료 시간이 시작 시간 이전이면 시작+60분으로 자동 조정
+    function applyStartTime(newStart: string) {
+        setStartTime(newStart);
+        if (newStart >= endTime) {
+            setEndTime(addMinutesToTime(newStart, 60));
+        }
+    }
+
     function handleTimeChange(_: unknown, selectedDate?: Date) {
         if (Platform.OS === 'android') {
             setTimePickerVisible(false);
             if (!selectedDate) return;
             const timeStr = dateToTimeString(selectedDate);
-            if (editingTime === 'start') setStartTime(timeStr);
+            if (editingTime === 'start') applyStartTime(timeStr);
             else setEndTime(timeStr);
             return;
         }
@@ -157,7 +174,7 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
     }
 
     function confirmTimePicker() {
-        if (editingTime === 'start') setStartTime(pendingTime);
+        if (editingTime === 'start') applyStartTime(pendingTime);
         else setEndTime(pendingTime);
         setTimePickerVisible(false);
     }

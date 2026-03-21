@@ -325,7 +325,7 @@ export default function MainScreen({ navigation, route }: Props) {
         navigation.navigate('ScheduleForm', {
             defaultDay: dayIndex,
             defaultStartTime: `${hh}:00`,
-            defaultEndTime: `${hh}:50`,
+            defaultEndTime: `${String(hour + 1).padStart(2, '0')}:00`,
             timetableId: activeTimetable?.id,
         });
     }
