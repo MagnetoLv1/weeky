@@ -686,14 +686,14 @@ export default function MainScreen({ navigation, route }: Props) {
                     >
                         <View className="flex-row items-start justify-between min-h-[40px]">
                             {/* 타이틀 영역 — GlassView: 탭 시 scale+shimmer 효과 */}
-                            <View className="py-1">
+                            <View>
                                 <TouchableOpacity
                                     activeOpacity={1}
                                     onPress={() =>
                                         bottomSheetRef.current?.present()
                                     }
                                 >
-                                    <GlassView>
+                                    <GlassView className="rounded-full flex-row items-center px-4 gap-1 h-11">
                                         <Text className="text-[18px] font-bold text-[#111827]">
                                             {activeTimetable?.name ?? '시간표'}
                                         </Text>
@@ -706,21 +706,16 @@ export default function MainScreen({ navigation, route }: Props) {
                             </View>
 
                             <View className="flex-row items-center gap-2">
-                                {/* Plus: TouchableOpacity(action) > GlassButtonItem(glass visual) */}
-                                <TouchableOpacity
-                                    activeOpacity={1}
+                                {/* Plus 버튼 */}
+                                <GlassButtonItem
+                                    className="size-11"
                                     onPress={handleAddTimetable}
                                 >
-                                    <GlassButtonItem>
-                                        <Plus size={22} color="#374151" />
-                                    </GlassButtonItem>
-                                </TouchableOpacity>
+                                    <Plus size={22} color="#374151" />
+                                </GlassButtonItem>
 
-                                {/* Ellipsis: ContextMenu(action) > GlassButtonItem(glass visual) */}
-                                <View
-                                    collapsable={false}
-                                    style={{ width: 44, height: 44 }}
-                                >
+                                {/* Ellipsis: ContextMenu가 터치 처리, GlassButtonItem은 비주얼만 담당 */}
+                                <View collapsable={false}>
                                     <ContextMenu
                                         dropdownMenuMode
                                         style={{ width: 44, height: 44 }}
@@ -763,7 +758,8 @@ export default function MainScreen({ navigation, route }: Props) {
                                             )
                                         }
                                     >
-                                        <GlassButtonItem>
+                                        {/* onPress 없으므로 TouchableOpacity 없이 비주얼만 렌더링 → ContextMenu가 터치 처리 */}
+                                        <GlassButtonItem className="size-11">
                                             <Ellipsis
                                                 size={20}
                                                 color="#374151"
