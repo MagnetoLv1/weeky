@@ -1,63 +1,66 @@
-import React, {
-    useCallback,
-    useEffect,
-    useRef,
-    useState,
-} from 'react';
-import { cn } from '@/utils/cn';
 import {
-    View,
+    ALL_DAYS,
+    HEADER_CONTENT_HEIGHT,
+    MIN_CELL_HEIGHT,
+    SCREEN_WIDTH,
+    TIME_COL_WIDTH,
+    ZOOM_DURATION,
+    formatTimeLabel,
+    generateTimeLabels,
+    getTodayIndex,
+    triggerHaptic,
+} from '@/components/timetable/constants';
+import { DraggableScheduleBlock } from '@/components/timetable/DraggableScheduleBlock';
+import {
+    GlassButtonItem,
+    GlassView,
+} from '@/components/timetable/GlassIconButton';
+import { HeaderContainer } from '@/components/timetable/HeaderContainer';
+import { renderBackdrop } from '@/components/timetable/renderBackdrop';
+import { TimetableShareView } from '@/components/timetable/TimetableShareView';
+import type { RootStackParamList } from '@/navigation/RootNavigator';
+import {
+    getHolidays,
+    hasHolidaysForYear,
+    saveHolidays,
+} from '@/store/holidayStore';
+import { getTimetables, saveTimetables } from '@/store/timetableStore';
+import type { Schedule, Timetable } from '@/types';
+import { cn } from '@/utils/cn';
+import { fetchHolidaysForYear } from '@/utils/holidayApi';
+import { syncScheduleNotifications } from '@/utils/notification';
+import { generateTimetableHtml } from '@/utils/printHtml';
+import { minutesToTime, timeToMinutes } from '@/utils/time';
+import { BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
+import type { RouteProp } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Check, ChevronDown, Ellipsis, Plus } from 'lucide-react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+    Dimensions,
+    Platform,
+    Pressable,
+    StatusBar,
+    StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
-    Pressable,
-    Dimensions,
-    StyleSheet,
-    Platform,
-    StatusBar,
+    View,
 } from 'react-native';
-import { Portal, Modal, Button } from 'react-native-paper';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
-import { ChevronDown, Plus, Check, Ellipsis } from 'lucide-react-native';
 import ContextMenu from 'react-native-context-menu-view';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Button, Modal, Portal } from 'react-native-paper';
 import RNPrint from 'react-native-print';
-import Share from 'react-native-share';
-import { captureRef } from 'react-native-view-shot';
-import { generateTimetableHtml } from '@/utils/printHtml';
 import Animated, {
-    useSharedValue,
-    useAnimatedStyle,
     useAnimatedScrollHandler,
+    useAnimatedStyle,
+    useSharedValue,
     withTiming,
 } from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { RouteProp } from '@react-navigation/native';
-import type { RootStackParamList } from '@/navigation/RootNavigator';
-import { getTimetables, saveTimetables } from '@/store/timetableStore';
-import { getHolidays, saveHolidays, hasHolidaysForYear } from '@/store/holidayStore';
-import { fetchHolidaysForYear } from '@/utils/holidayApi';
-import type { Timetable, Schedule } from '@/types';
-import { timeToMinutes, minutesToTime } from '@/utils/time';
-import { syncScheduleNotifications } from '@/utils/notification';
-import {
-    ALL_DAYS,
-    TIME_COL_WIDTH,
-    MIN_CELL_HEIGHT,
-    SCREEN_WIDTH,
-    ZOOM_DURATION,
-    HEADER_CONTENT_HEIGHT,
-    getTodayIndex,
-    generateTimeLabels,
-    formatTimeLabel,
-    triggerHaptic,
-} from '@/components/timetable/constants';
-import { HeaderContainer } from '@/components/timetable/HeaderContainer';
-import { renderBackdrop } from '@/components/timetable/renderBackdrop';
-import { DraggableScheduleBlock } from '@/components/timetable/DraggableScheduleBlock';
-import { TimetableShareView } from '@/components/timetable/TimetableShareView';
+import Share from 'react-native-share';
+import { captureRef } from 'react-native-view-shot';
 
 type Props = {
     navigation: NativeStackNavigationProp<RootStackParamList, 'Main'>;
@@ -75,7 +78,7 @@ export default function MainScreen({ navigation, route }: Props) {
     // 공휴일 날짜 집합 — "YYYYMMDD" 형식 문자열
     const [holidayDates, setHolidayDates] = useState<Set<string>>(new Set());
     const [addModalVisible, setAddModalVisible] = useState(false);
-    const bottomSheetRef = useRef<BottomSheet>(null);
+    const bottomSheetRef = useRef<BottomSheetModal>(null);
     const [newTimetableName, setNewTimetableName] = useState('');
     const [nowMin, setNowMin] = useState(() => {
         const n = new Date();
@@ -440,40 +443,42 @@ export default function MainScreen({ navigation, route }: Props) {
                         {/* 시간 라벨 — 핀치/팬 무관하게 고정 */}
                         <View className="relative w-[58px]">
                             {/* 현재 시각 배지 — 시간 라벨 우측에 표시 */}
-                            {showNowIndicator && nowMin >= startMin && nowMin <= endMin && (
-                                <View
-                                    pointerEvents="none"
-                                    style={{
-                                        position: 'absolute',
-                                        top:
-                                            (nowMin - startMin) *
-                                                MIN_CELL_HEIGHT -
-                                            6,
-                                        right: 4,
-                                        zIndex: 11,
-                                    }}
-                                >
+                            {showNowIndicator &&
+                                nowMin >= startMin &&
+                                nowMin <= endMin && (
                                     <View
+                                        pointerEvents="none"
                                         style={{
-                                            backgroundColor: nowLineColor,
-                                            borderRadius: 7,
-                                            paddingHorizontal: 4,
-                                            paddingVertical: 1,
+                                            position: 'absolute',
+                                            top:
+                                                (nowMin - startMin) *
+                                                    MIN_CELL_HEIGHT -
+                                                6,
+                                            right: 4,
+                                            zIndex: 11,
                                         }}
                                     >
-                                        <Text className="text-[9px] text-white font-medium">
-                                            {String(
-                                                Math.floor(nowMin / 60),
-                                            ).padStart(2, '0')}
-                                            :
-                                            {String(nowMin % 60).padStart(
-                                                2,
-                                                '0',
-                                            )}
-                                        </Text>
+                                        <View
+                                            style={{
+                                                backgroundColor: nowLineColor,
+                                                borderRadius: 7,
+                                                paddingHorizontal: 4,
+                                                paddingVertical: 1,
+                                            }}
+                                        >
+                                            <Text className="text-[9px] text-white font-medium">
+                                                {String(
+                                                    Math.floor(nowMin / 60),
+                                                ).padStart(2, '0')}
+                                                :
+                                                {String(nowMin % 60).padStart(
+                                                    2,
+                                                    '0',
+                                                )}
+                                            </Text>
+                                        </View>
                                     </View>
-                                </View>
-                            )}
+                                )}
                             {timeLabels.map(label => {
                                 const { ampm, hour } = formatTimeLabel(label);
                                 return (
@@ -496,22 +501,24 @@ export default function MainScreen({ navigation, route }: Props) {
                         {/* 요일 컬럼 영역 — 핀치/팬 제스처 적용 */}
                         <View style={{ flex: 1, overflow: 'hidden' }}>
                             {/* 현재 시간선 — translateX와 함께 이동 */}
-                            {showNowIndicator && nowMin >= startMin && nowMin <= endMin && (
-                                <View
-                                    pointerEvents="none"
-                                    style={{
-                                        position: 'absolute',
-                                        top:
-                                            (nowMin - startMin) *
-                                            MIN_CELL_HEIGHT,
-                                        left: 0,
-                                        right: 0,
-                                        height: 0.75,
-                                        backgroundColor: nowLineColor,
-                                        zIndex: 10,
-                                    }}
-                                />
-                            )}
+                            {showNowIndicator &&
+                                nowMin >= startMin &&
+                                nowMin <= endMin && (
+                                    <View
+                                        pointerEvents="none"
+                                        style={{
+                                            position: 'absolute',
+                                            top:
+                                                (nowMin - startMin) *
+                                                MIN_CELL_HEIGHT,
+                                            left: 0,
+                                            right: 0,
+                                            height: 0.75,
+                                            backgroundColor: nowLineColor,
+                                            zIndex: 10,
+                                        }}
+                                    />
+                                )}
                             <GestureDetector gesture={columnsGesture}>
                                 <Animated.View style={columnsContainerStyle}>
                                     {ALL_DAYS.map((day, dayIndex) => (
@@ -678,37 +685,45 @@ export default function MainScreen({ navigation, route }: Props) {
                         style={{ paddingTop: topInset }}
                     >
                         <View className="flex-row items-start justify-between min-h-[40px]">
-                            {/* 타이틀 영역 */}
-                            <View className="flex-1 py-1">
+                            {/* 타이틀 영역 — GlassView: 탭 시 scale+shimmer 효과 */}
+                            <View className="py-1">
                                 <TouchableOpacity
-                                    className="flex-row items-center gap-[4px]"
+                                    activeOpacity={1}
                                     onPress={() =>
-                                        bottomSheetRef.current?.expand()
+                                        bottomSheetRef.current?.present()
                                     }
-                                    activeOpacity={0.6}
                                 >
-                                    <Text className="text-[18px] font-bold text-[#111827]">
-                                        {activeTimetable?.name ?? '시간표'}
-                                    </Text>
-                                    <ChevronDown
-                                        size={16}
-                                        color="#9ca3af"
-                                    />
+                                    <GlassView>
+                                        <Text className="text-[18px] font-bold text-[#111827]">
+                                            {activeTimetable?.name ?? '시간표'}
+                                        </Text>
+                                        <ChevronDown
+                                            size={16}
+                                            color="#9ca3af"
+                                        />
+                                    </GlassView>
                                 </TouchableOpacity>
                             </View>
 
-                            {/* 버튼 */}
-                            <View className="flex-row gap-1 pt-[2px]">
+                            <View className="flex-row items-center gap-2">
+                                {/* Plus: TouchableOpacity(action) > GlassButtonItem(glass visual) */}
                                 <TouchableOpacity
-                                    className="w-8 h-8 items-center justify-center"
+                                    activeOpacity={1}
                                     onPress={handleAddTimetable}
                                 >
-                                    <Plus size={20} color="#9ca3af" />
+                                    <GlassButtonItem>
+                                        <Plus size={22} color="#374151" />
+                                    </GlassButtonItem>
                                 </TouchableOpacity>
-                                <View collapsable={false} className="w-8 h-8">
+
+                                {/* Ellipsis: ContextMenu(action) > GlassButtonItem(glass visual) */}
+                                <View
+                                    collapsable={false}
+                                    style={{ width: 44, height: 44 }}
+                                >
                                     <ContextMenu
                                         dropdownMenuMode
-                                        style={{ width: 32, height: 32 }}
+                                        style={{ width: 44, height: 44 }}
                                         actions={
                                             Platform.OS === 'android'
                                                 ? [
@@ -748,12 +763,12 @@ export default function MainScreen({ navigation, route }: Props) {
                                             )
                                         }
                                     >
-                                        <View className="w-8 h-8 items-center justify-center">
+                                        <GlassButtonItem>
                                             <Ellipsis
-                                                size={18}
-                                                color="#6b7280"
+                                                size={20}
+                                                color="#374151"
                                             />
-                                        </View>
+                                        </GlassButtonItem>
                                     </ContextMenu>
                                 </View>
                             </View>
@@ -773,9 +788,10 @@ export default function MainScreen({ navigation, route }: Props) {
                                             className="items-center justify-center overflow-hidden"
                                             style={colStyles[i]}
                                         >
-                                            {headerVisible && (
+                                            {headerVisible &&
                                                 (() => {
-                                                    const isToday = i === todayIndex;
+                                                    const isToday =
+                                                        i === todayIndex;
                                                     const isHoliday =
                                                         ttHolidaySync &&
                                                         holidayDates.has(
@@ -799,9 +815,11 @@ export default function MainScreen({ navigation, route }: Props) {
                                                                         ? 'text-red-500'
                                                                         : isToday
                                                                         ? 'text-white'
-                                                                        : i === 5
+                                                                        : i ===
+                                                                          5
                                                                         ? 'text-blue-500'
-                                                                        : i === 6
+                                                                        : i ===
+                                                                          6
                                                                         ? 'text-red-500'
                                                                         : 'text-[#374151]',
                                                                 )}
@@ -810,8 +828,7 @@ export default function MainScreen({ navigation, route }: Props) {
                                                             </Text>
                                                         </View>
                                                     );
-                                                })()
-                                            )}
+                                                })()}
                                         </Animated.View>
                                     );
                                 })}
@@ -821,10 +838,9 @@ export default function MainScreen({ navigation, route }: Props) {
                 </HeaderContainer>
             </View>
 
-            {/* 시간표 선택 바텀시트 */}
-            <BottomSheet
+            {/* 시간표 선택 바텀시트 — BottomSheetModal은 네이티브 Modal 레이어에 렌더링되어 헤더 위에 표시 */}
+            <BottomSheetModal
                 ref={bottomSheetRef}
-                index={-1}
                 enableDynamicSizing
                 enablePanDownToClose
                 backdropComponent={renderBackdrop}
@@ -841,7 +857,7 @@ export default function MainScreen({ navigation, route }: Props) {
                                 if (i !== activeIndex) {
                                     setActiveIndex(i);
                                 }
-                                bottomSheetRef.current?.close();
+                                bottomSheetRef.current?.dismiss();
                             }}
                             activeOpacity={0.6}
                         >
@@ -862,7 +878,7 @@ export default function MainScreen({ navigation, route }: Props) {
                     ))}
                     <View className="h-8" />
                 </BottomSheetView>
-            </BottomSheet>
+            </BottomSheetModal>
 
             {/* 공유용 오프스크린 시간표 뷰 */}
             {activeTimetable && (

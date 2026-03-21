@@ -2,6 +2,7 @@ import './src/global.css';
 import React, { useEffect } from 'react';
 import { Text, TextInput, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { NavigationContainer } from '@react-navigation/native';
 import { PaperProvider, MD3LightTheme } from 'react-native-paper';
 import RootNavigator from './src/navigation/RootNavigator';
@@ -11,6 +12,7 @@ import {
   requestNotificationPermission,
   syncAllNotifications,
 } from './src/utils/notification';
+import { initAppsFlyer } from './src/utils/appsflyer';
 
 // iOS: 'Pretendard' 패밀리명 → fontWeight 자동 매핑 (Pretendard-Bold 등)
 // Android: 'Pretendard-Regular' 고정 (weight 별도 파일 미매핑)
@@ -46,14 +48,18 @@ export default function App() {
     setupNotificationChannel();
     requestNotificationPermission();
     syncAllNotifications(getTimetables());
+    initAppsFlyer(); // 앱 실행 시 AppsFlyer SDK 초기화
   }, []);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <PaperProvider theme={theme}>
-        <NavigationContainer>
-          <RootNavigator />
-        </NavigationContainer>
+        {/* BottomSheetModalProvider: BottomSheetModal이 네이티브 Modal 레이어에 렌더링되어 헤더 위에 표시 */}
+        <BottomSheetModalProvider>
+          <NavigationContainer>
+            <RootNavigator />
+          </NavigationContainer>
+        </BottomSheetModalProvider>
       </PaperProvider>
     </GestureHandlerRootView>
   );
