@@ -33,17 +33,29 @@ type Props = {
 const DAYS = ['월', '화', '수', '목', '금', '토', '일'];
 
 const PASTEL_COLORS = [
-    '#FFB3C1',
-    '#FFD6A5',
-    '#FDFFB6',
-    '#CAFFBF',
-    '#9BF6FF',
-    '#BDB2FF',
-    '#FFC6FF',
-    '#A0C4FF',
-    '#FFD6BA',
-    '#B5EAD7',
+    '#FFB3C1', // 핑크
+    '#FFD6A5', // 피치
+    '#FDFFB6', // 옐로우
+    '#CAFFBF', // 그린
+    '#9BF6FF', // 스카이
+    '#BDB2FF', // 퍼플
+    '#FFC6FF', // 라벤더
+    '#A0C4FF', // 블루
+    '#FFD6BA', // 코랄
+    '#B5EAD7', // 민트
+    '#F4A261', // 오렌지
+    '#E9C46A', // 골드
+    '#84C5A3', // 세이지
+    '#7EC8E3', // 틸
+    '#C77DFF', // 바이올렛
 ];
+
+// 현재 시간표에서 사용 중이지 않은 색상 중 랜덤 선택 (없으면 전체에서 랜덤)
+function pickUnusedColor(usedColors: string[]): string {
+    const unused = PASTEL_COLORS.filter(c => !usedColors.includes(c));
+    const pool = unused.length > 0 ? unused : PASTEL_COLORS;
+    return pool[Math.floor(Math.random() * pool.length)];
+}
 
 const NOTIF_LABELS: Record<number, string> = {
     0: '시작 시간',
@@ -88,7 +100,14 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
     const [endTime, setEndTime] = useState(
         schedule?.endTime ?? defaultEndTime ?? '10:00',
     );
-    const [color, setColor] = useState(schedule?.color ?? PASTEL_COLORS[4]);
+    const [color, setColor] = useState(() => {
+        if (schedule?.color) return schedule.color;
+        // 신규 일정: 현재 시간표에서 이미 사용 중인 색상 제외하고 랜덤 선택
+        const timetables = getTimetables();
+        const target = timetables.find(tt => tt.id === timetableId) ?? timetables[0];
+        const usedColors = (target?.schedules ?? []).map(s => s.color);
+        return pickUnusedColor(usedColors);
+    });
     const [notifEnabled, setNotifEnabled] = useState(
         schedule?.notification?.enabled ?? false,
     );
