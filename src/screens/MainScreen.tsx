@@ -486,9 +486,9 @@ export default function MainScreen({ navigation, route }: Props) {
                                         key={label}
                                         className="items-end pr-2 h-[90px]"
                                     >
-                                        <Text className="text-[10px] text-[#9ca3af] -mt-[6px]">
+                                        <Text className="text-[10px] text-[#9ca3af] -mt-1.5">
                                             {ampm}{' '}
-                                            <Text className="text-[14px] font-medium">
+                                            <Text className="text-sm font-medium">
                                                 {hour}
                                             </Text>
                                             시
@@ -684,7 +684,7 @@ export default function MainScreen({ navigation, route }: Props) {
                         className="px-4 pb-0"
                         style={{ paddingTop: topInset }}
                     >
-                        <View className="flex-row items-start justify-between min-h-[40px]">
+                        <View className="flex-row items-start justify-between min-h-10">
                             {/* 타이틀 영역 — GlassView: 탭 시 scale+shimmer 효과 */}
                             <View>
                                 <TouchableOpacity
@@ -694,7 +694,7 @@ export default function MainScreen({ navigation, route }: Props) {
                                     }
                                 >
                                     <GlassView className="rounded-full flex-row items-center px-4 gap-1 h-11">
-                                        <Text className="text-[18px] font-bold text-[#111827]">
+                                        <Text className="text-lg font-bold text-[#111827]">
                                             {activeTimetable?.name ?? '시간표'}
                                         </Text>
                                         <ChevronDown
@@ -772,7 +772,7 @@ export default function MainScreen({ navigation, route }: Props) {
                     </View>
 
                     {/* 요일 헤더 — 바디 컬럼과 동일한 translateX 적용 */}
-                    <View className="flex-row border-b border-[#e5e7eb] h-[44px]">
+                    <View className="flex-row border-b border-[#e5e7eb] h-11">
                         <View className="w-[58px]" />
                         <View style={{ flex: 1, overflow: 'hidden' }}>
                             <Animated.View style={columnsContainerStyle}>
@@ -859,7 +859,7 @@ export default function MainScreen({ navigation, route }: Props) {
                         >
                             <Text
                                 className={cn(
-                                    'flex-1 text-[16px]',
+                                    'flex-1 text-base',
                                     i === activeIndex
                                         ? 'font-semibold text-[#3b82f6]'
                                         : 'text-[#1C1C1E]',
@@ -912,7 +912,7 @@ export default function MainScreen({ navigation, route }: Props) {
                             borderWidth: StyleSheet.hairlineWidth,
                             borderColor: '#E5E5EA',
                         }}
-                        className="rounded-lg px-3 py-[10px] text-[16px] text-[#1C1C1E] bg-[#F2F2F7]"
+                        className="rounded-lg px-3 py-2.5 text-base text-[#1C1C1E] bg-[#F2F2F7]"
                         value={newTimetableName}
                         onChangeText={setNewTimetableName}
                         placeholder="시간표 이름"

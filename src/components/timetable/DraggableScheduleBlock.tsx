@@ -127,7 +127,7 @@ export function DraggableScheduleBlock({
     return (
         <GestureDetector gesture={composed}>
             <Animated.View
-                className="absolute rounded-[4px] overflow-hidden"
+                className="absolute rounded overflow-hidden"
                 style={[
                     {
                         top,
@@ -142,7 +142,7 @@ export function DraggableScheduleBlock({
                 <Animated.View className="p-1" style={stickyLabelStyle}>
                     <Text
                         numberOfLines={1}
-                        className="text-[12px] font-bold text-[#1f2937]"
+                        className="text-xs font-bold text-[#1f2937]"
                     >
                         {schedule.title}
                     </Text>

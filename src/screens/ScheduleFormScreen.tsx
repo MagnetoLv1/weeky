@@ -263,14 +263,14 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
             >
                 <TouchableOpacity
                     onPress={() => navigation.goBack()}
-                    className="min-w-[48px]"
+                    className="min-w-12"
                 >
                     <Text className="text-[17px] text-blue-500">취소</Text>
                 </TouchableOpacity>
                 <Text className="text-[17px] font-semibold text-[#1C1C1E]">
                     {isEditing ? '일정 편집' : '새로운 일정'}
                 </Text>
-                <TouchableOpacity onPress={handleSave} className="min-w-[48px]">
+                <TouchableOpacity onPress={handleSave} className="min-w-12">
                     <Text className="text-[17px] font-semibold text-blue-500 text-right">
                         {isEditing ? '수정' : '추가'}
                     </Text>
@@ -292,7 +292,7 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
                     {/* ── Card 1: 제목 / 부제 ── */}
                     <View className="bg-white rounded-xl mx-4 mb-5 overflow-hidden">
                         <TextInput
-                            className="text-[17px] text-[#1C1C1E] px-4 py-[14px] min-h-[50px]"
+                            className="text-[17px] text-[#1C1C1E] px-4 py-3.5 min-h-[50px]"
                             placeholder="제목"
                             placeholderTextColor="#C7C7CC"
                             value={title}
@@ -307,7 +307,7 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
                             }}
                         />
                         <TextInput
-                            className="text-[17px] text-[#1C1C1E] px-4 py-[14px] min-h-[50px]"
+                            className="text-[17px] text-[#1C1C1E] px-4 py-3.5 min-h-[50px]"
                             placeholder="위치 또는 부제"
                             placeholderTextColor="#C7C7CC"
                             value={subTitle}
@@ -335,7 +335,7 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
                             }}
                         />
                         {/* 요일 칩 */}
-                        <View className="flex-row px-3 py-[10px] gap-[6px]">
+                        <View className="flex-row px-3 py-2.5 gap-1.5">
                             {DAYS.map((day, i) => (
                                 <TouchableOpacity
                                     key={day}
@@ -374,7 +374,7 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
                             </Text>
                             <TouchableOpacity
                                 onPress={() => openTimePicker('start')}
-                                className="bg-[#E5E5EA] rounded-lg px-3 py-[6px]"
+                                className="bg-[#E5E5EA] rounded-lg px-3 py-1.5"
                             >
                                 <Text className="text-[17px] text-blue-500 font-medium">
                                     {formatTimeDisplay(startTime)}
@@ -395,7 +395,7 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
                             </Text>
                             <TouchableOpacity
                                 onPress={() => openTimePicker('end')}
-                                className="bg-[#E5E5EA] rounded-lg px-3 py-[6px]"
+                                className="bg-[#E5E5EA] rounded-lg px-3 py-1.5"
                             >
                                 <Text className="text-[17px] text-blue-500 font-medium">
                                     {formatTimeDisplay(endTime)}
@@ -472,7 +472,7 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
                             <Text className="text-[17px] text-[#1C1C1E]">
                                 알림
                             </Text>
-                            <View className="flex-row items-center gap-[10px]">
+                            <View className="flex-row items-center gap-2.5">
                                 <Switch
                                     value={notifEnabled}
                                     onValueChange={setNotifEnabled}
@@ -501,7 +501,7 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
                                     <Text className="text-[17px] text-[#1C1C1E]">
                                         시간
                                     </Text>
-                                    <View className="flex-row items-center gap-[2px]">
+                                    <View className="flex-row items-center gap-0.5">
                                         <Text className="text-[17px] text-[#8E8E93]">
                                             {notifValueLabel}
                                         </Text>
@@ -520,7 +520,7 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
                                                 marginLeft: 16,
                                             }}
                                         />
-                                        <View className="flex-row px-3 py-[10px] gap-[6px]">
+                                        <View className="flex-row px-3 py-2.5 gap-1.5">
                                             {([0, 5, 10, 15, 30] as const).map(
                                                 min => (
                                                     <TouchableOpacity
@@ -542,7 +542,7 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
                                                     >
                                                         <Text
                                                             className={cn(
-                                                                'text-[12px] font-medium',
+                                                                'text-xs font-medium',
                                                                 notifMinutes ===
                                                                     min
                                                                     ? 'text-white'
@@ -564,7 +564,7 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
                     {/* ── Card 5: 메모 ── */}
                     <View className="bg-white rounded-xl mx-4 mb-5 overflow-hidden">
                         <TextInput
-                            className="text-[17px] text-[#1C1C1E] px-4 py-[14px] min-h-[80px]"
+                            className="text-[17px] text-[#1C1C1E] px-4 py-3.5 min-h-20"
                             placeholder="메모"
                             placeholderTextColor="#C7C7CC"
                             value={memo}
@@ -578,7 +578,7 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
                     {isEditing && (
                         <TouchableOpacity
                             onPress={handleDelete}
-                            className="bg-white rounded-xl mx-4 mb-5 py-[14px] items-center"
+                            className="bg-white rounded-xl mx-4 mb-5 py-3.5 items-center"
                         >
                             <Text className="text-[17px] text-red-500">
                                 일정 삭제

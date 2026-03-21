@@ -1,30 +1,39 @@
-import React, { useCallback, useState } from 'react';
-import { View, Text, Alert, TouchableOpacity, Platform } from 'react-native';
-import {
-    List,
-    Switch,
-    Divider,
-    Button,
-    TextInput,
-    Portal,
-    Modal,
-} from 'react-native-paper';
+import type { RootStackParamList } from '@/navigation/RootNavigator';
+import { hasHolidaysForYear, saveHolidays } from '@/store/holidayStore';
+import { getTimetables, saveTimetables } from '@/store/timetableStore';
+import type { Timetable } from '@/types';
+import { fetchHolidaysForYear } from '@/utils/holidayApi';
+import { cancelScheduleNotifications } from '@/utils/notification';
+import { generateTimetableHtml } from '@/utils/printHtml';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import RNPrint from 'react-native-print';
+import type { RouteProp } from '@react-navigation/native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { RouteProp } from '@react-navigation/native';
-import type { RootStackParamList } from '@/navigation/RootNavigator';
-import { getTimetables, saveTimetables } from '@/store/timetableStore';
-import { hasHolidaysForYear, saveHolidays } from '@/store/holidayStore';
-import { fetchHolidaysForYear } from '@/utils/holidayApi';
-import { generateTimetableHtml } from '@/utils/printHtml';
-import type { Timetable } from '@/types';
-import { cancelScheduleNotifications } from '@/utils/notification';
+import { Check } from 'lucide-react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+    Alert,
+    Platform,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { Divider, List, Switch } from 'react-native-paper';
+import RNPrint from 'react-native-print';
 
 type Props = {
     navigation: NativeStackNavigationProp<RootStackParamList, 'Settings'>;
     route: RouteProp<RootStackParamList, 'Settings'>;
+};
+
+// 설정 화면에서 편집하는 필드들의 드래프트 타입
+type DraftSettings = {
+    name: string;
+    timeRangeStart: string;
+    timeRangeEnd: string;
+    showWeekends: boolean;
+    holidaySync: boolean;
 };
 
 function timeStringToDate(time: string): Date {
@@ -44,8 +53,11 @@ export default function SettingsScreen({ navigation, route }: Props) {
     const { timetableId } = route.params;
 
     const [timetables, setTimetables] = useState<Timetable[]>([]);
-    const [renameModalVisible, setRenameModalVisible] = useState(false);
-    const [tempName, setTempName] = useState('');
+
+    // 드래프트 패턴: 원본 저장값(original)과 편집 중인 값(draft)을 분리
+    // 완료 버튼을 눌러야만 store에 반영, 뒤로가기 시 draft는 자동으로 폐기됨
+    const [original, setOriginal] = useState<DraftSettings | null>(null);
+    const [draft, setDraft] = useState<DraftSettings | null>(null);
 
     // 시간 피커
     const [timePickerVisible, setTimePickerVisible] = useState(false);
@@ -54,18 +66,64 @@ export default function SettingsScreen({ navigation, route }: Props) {
     );
     const [pendingTime, setPendingTime] = useState('07:00');
 
+    // 변경 여부: original과 draft가 다를 때만 완료 버튼 활성화
+    const isDirty =
+        draft !== null &&
+        original !== null &&
+        JSON.stringify(draft) !== JSON.stringify(original);
+
+    // 화면 진입 시 timetables 로드 + original/draft 초기화
     useFocusEffect(
         useCallback(() => {
-            setTimetables(getTimetables());
-        }, []),
+            const tts = getTimetables();
+            setTimetables(tts);
+            const cur = tts.find(tt => tt.id === timetableId);
+            if (cur) {
+                const settings: DraftSettings = {
+                    name: cur.name,
+                    timeRangeStart: cur.timeRangeStart ?? '07:00',
+                    timeRangeEnd: cur.timeRangeEnd ?? '23:00',
+                    showWeekends: cur.showWeekends ?? false,
+                    holidaySync: cur.holidaySync ?? false,
+                };
+                setOriginal(settings);
+                setDraft(settings);
+            }
+        }, [timetableId]),
     );
 
-    const current = timetables.find(tt => tt.id === timetableId);
-    const ttStart = current?.timeRangeStart ?? '07:00';
-    const ttEnd = current?.timeRangeEnd ?? '23:00';
-    const ttShowWeekends = current?.showWeekends ?? false;
-    const ttHolidaySync = current?.holidaySync ?? false;
+    // isDirty 변화 시 헤더 완료 버튼 업데이트
+    useEffect(() => {
+        navigation.setOptions({
+            headerRight: () => (
+                <TouchableOpacity
+                    onPress={handleSave}
+                    disabled={!isDirty}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    className="flex-row items-center gap-2 px-3"
+                >
+                    <Check
+                        size={18}
+                        color={isDirty ? '#007AFF' : '#9ca3af'}
+                        strokeWidth={3}
+                    />
+                    <Text
+                        className="font-semibold text-lg"
+                        style={{
+                            color: isDirty ? '#007AFF' : '#9ca3af',
+                        }}
+                    >
+                        완료
+                    </Text>
+                </TouchableOpacity>
+            ),
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isDirty]);
 
+    const current = timetables.find(tt => tt.id === timetableId);
+
+    // store에 실제로 저장하는 함수 (완료 버튼에서만 호출)
     function updateCurrent(patch: Partial<Timetable>) {
         const updated = timetables.map(tt =>
             tt.id === timetableId ? { ...tt, ...patch } : tt,
@@ -74,10 +132,32 @@ export default function SettingsScreen({ navigation, route }: Props) {
         setTimetables(updated);
     }
 
+    // 완료 버튼 핸들러: draft를 store에 저장하고 뒤로 이동
+    function handleSave() {
+        if (!draft) return;
+        const trimmed = draft.name.trim();
+        if (!trimmed) {
+            Alert.alert('알림', '시간표 이름을 입력해 주세요.');
+            return;
+        }
+        updateCurrent({
+            name: trimmed,
+            timeRangeStart: draft.timeRangeStart,
+            timeRangeEnd: draft.timeRangeEnd,
+            showWeekends: draft.showWeekends,
+            holidaySync: draft.holidaySync,
+        });
+        setOriginal({ ...draft, name: trimmed }); // dirty 해제
+        navigation.goBack();
+    }
+
     function openTimePicker(field: 'start' | 'end') {
-        const current_time = field === 'start' ? ttStart : ttEnd;
+        const currentTime =
+            field === 'start'
+                ? draft?.timeRangeStart ?? '07:00'
+                : draft?.timeRangeEnd ?? '23:00';
         setEditingTimeField(field);
-        setPendingTime(current_time);
+        setPendingTime(currentTime);
         setTimePickerVisible(true);
     }
 
@@ -92,9 +172,12 @@ export default function SettingsScreen({ navigation, route }: Props) {
         setPendingTime(dateToTimeString(selectedDate));
     }
 
+    // 시간 유효성 검사 후 draft에만 반영 (store 저장 없음)
     function applyTime(time: string) {
-        const newStart = editingTimeField === 'start' ? time : ttStart;
-        const newEnd = editingTimeField === 'end' ? time : ttEnd;
+        if (!draft) return;
+        const newStart =
+            editingTimeField === 'start' ? time : draft.timeRangeStart;
+        const newEnd = editingTimeField === 'end' ? time : draft.timeRangeEnd;
         if (newStart >= newEnd) {
             Alert.alert(
                 '시간 오류',
@@ -102,7 +185,9 @@ export default function SettingsScreen({ navigation, route }: Props) {
             );
             return;
         }
-        updateCurrent({ timeRangeStart: newStart, timeRangeEnd: newEnd });
+        setDraft(
+            d => d && { ...d, timeRangeStart: newStart, timeRangeEnd: newEnd },
+        );
     }
 
     function confirmTimePicker() {
@@ -112,21 +197,6 @@ export default function SettingsScreen({ navigation, route }: Props) {
 
     function cancelTimePicker() {
         setTimePickerVisible(false);
-    }
-
-    function openRenameModal() {
-        setTempName(current?.name ?? '');
-        setRenameModalVisible(true);
-    }
-
-    function confirmRename() {
-        const trimmed = tempName.trim();
-        if (!trimmed) {
-            Alert.alert('알림', '시간표 이름을 입력해 주세요.');
-            return;
-        }
-        updateCurrent({ name: trimmed });
-        setRenameModalVisible(false);
     }
 
     async function handlePrint() {
@@ -172,36 +242,63 @@ export default function SettingsScreen({ navigation, route }: Props) {
         );
     }
 
-    if (!current) return null;
+    if (!current || !draft) return null;
 
     return (
         <View className="flex-1 bg-gray-50">
             {/* 시간표 정보 섹션 */}
             <List.Section>
-                <List.Subheader className="text-gray-500 text-[12px] uppercase tracking-[0.5px]">
-                    시간표
+                <List.Subheader className="text-gray-500 text-xs uppercase tracking-[0.5px]">
+                    시간표 이름
                 </List.Subheader>
                 <View className="bg-white mx-4 rounded-xl overflow-hidden">
-                    <List.Item
-                        title={current.name}
-                        description="시간표 이름"
-                        right={() => (
-                            <TouchableOpacity
-                                onPress={openRenameModal}
-                                className="self-center px-2"
-                            >
-                                <Text className="text-blue-500 text-[14px]">
-                                    편집
-                                </Text>
-                            </TouchableOpacity>
-                        )}
-                    />
+                    <View className="px-4 py-3">
+                        <View className="flex-row items-center h-10">
+                            <TextInput
+                                value={draft.name}
+                                onChangeText={v =>
+                                    setDraft(d => d && { ...d, name: v })
+                                }
+                                placeholder="시간표 이름을 입력하세요"
+                                placeholderTextColor="#9ca3af"
+                                returnKeyType="done"
+                                style={{
+                                    flex: 1,
+                                    fontSize: 16,
+                                    color: '#1C1C1E',
+                                    padding: 0,
+                                    height: 40,
+                                }}
+                            />
+                            {/* 입력 내용 지우기 */}
+                            {draft.name.length > 0 && (
+                                <TouchableOpacity
+                                    onPress={() =>
+                                        setDraft(d => d && { ...d, name: '' })
+                                    }
+                                    className="ml-2"
+                                    hitSlop={{
+                                        top: 8,
+                                        bottom: 8,
+                                        left: 8,
+                                        right: 8,
+                                    }}
+                                >
+                                    <View className="w-5 h-5 rounded-full bg-gray-300 items-center justify-center">
+                                        <Text className="text-white text-xs font-bold leading-none">
+                                            ×
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    </View>
                 </View>
             </List.Section>
 
             {/* 시간 범위 섹션 */}
             <List.Section>
-                <List.Subheader className="text-gray-500 text-[12px] uppercase tracking-[0.5px]">
+                <List.Subheader className="text-gray-500 text-xs uppercase tracking-[0.5px]">
                     시간 범위
                 </List.Subheader>
                 <View className="bg-white mx-4 rounded-xl overflow-hidden">
@@ -210,8 +307,8 @@ export default function SettingsScreen({ navigation, route }: Props) {
                         description="시간표가 시작되는 시각"
                         right={() => (
                             <View className="self-center pr-1">
-                                <Text className="text-blue-500 font-semibold text-[16px]">
-                                    {ttStart}
+                                <Text className="text-blue-500 font-semibold text-base">
+                                    {draft.timeRangeStart}
                                 </Text>
                             </View>
                         )}
@@ -223,8 +320,8 @@ export default function SettingsScreen({ navigation, route }: Props) {
                         description="시간표가 끝나는 시각"
                         right={() => (
                             <View className="self-center pr-1">
-                                <Text className="text-blue-500 font-semibold text-[16px]">
-                                    {ttEnd}
+                                <Text className="text-blue-500 font-semibold text-base">
+                                    {draft.timeRangeEnd}
                                 </Text>
                             </View>
                         )}
@@ -235,7 +332,7 @@ export default function SettingsScreen({ navigation, route }: Props) {
 
             {/* 표시 설정 섹션 */}
             <List.Section>
-                <List.Subheader className="text-gray-500 text-[12px] uppercase tracking-[0.5px]">
+                <List.Subheader className="text-gray-500 text-xs uppercase tracking-[0.5px]">
                     표시 설정
                 </List.Subheader>
                 <View className="bg-white mx-4 rounded-xl overflow-hidden">
@@ -244,9 +341,11 @@ export default function SettingsScreen({ navigation, route }: Props) {
                         description="토요일 · 일요일 컬럼 표시"
                         right={() => (
                             <Switch
-                                value={ttShowWeekends}
+                                value={draft.showWeekends}
                                 onValueChange={v =>
-                                    updateCurrent({ showWeekends: v })
+                                    setDraft(
+                                        d => d && { ...d, showWeekends: v },
+                                    )
                                 }
                             />
                         )}
@@ -257,10 +356,12 @@ export default function SettingsScreen({ navigation, route }: Props) {
                         description="요일 헤더에 공휴일 표기"
                         right={() => (
                             <Switch
-                                value={ttHolidaySync}
+                                value={draft.holidaySync}
                                 onValueChange={async v => {
-                                    updateCurrent({ holidaySync: v });
-                                    // 토글 ON 시 해당 연도 데이터 없으면 즉시 다운로드
+                                    setDraft(
+                                        d => d && { ...d, holidaySync: v },
+                                    );
+                                    // 토글 ON 시 해당 연도 데이터 없으면 즉시 프리페치 (캐싱 유지)
                                     if (v) {
                                         const year = new Date().getFullYear();
                                         if (!hasHolidaysForYear(year)) {
@@ -284,7 +385,7 @@ export default function SettingsScreen({ navigation, route }: Props) {
 
             {/* 내보내기 */}
             <List.Section>
-                <List.Subheader className="text-gray-500 text-[12px] uppercase tracking-[0.5px]">
+                <List.Subheader className="text-gray-500 text-xs uppercase tracking-[0.5px]">
                     내보내기
                 </List.Subheader>
                 <View className="bg-white mx-4 rounded-xl overflow-hidden">
@@ -322,43 +423,6 @@ export default function SettingsScreen({ navigation, route }: Props) {
                     />
                 </View>
             </List.Section>
-
-            {/* 시간표 이름 변경 모달 */}
-            <Portal>
-                <Modal
-                    visible={renameModalVisible}
-                    onDismiss={() => setRenameModalVisible(false)}
-                    contentContainerStyle={{
-                        backgroundColor: '#fff',
-                        marginHorizontal: 24,
-                        borderRadius: 16,
-                        padding: 24,
-                    }}
-                >
-                    <Text className="mb-4 font-semibold text-[16px]">
-                        시간표 이름 변경
-                    </Text>
-                    <TextInput
-                        label="시간표 이름"
-                        mode="outlined"
-                        value={tempName}
-                        onChangeText={setTempName}
-                        autoFocus
-                        style={{ backgroundColor: '#fff' }}
-                    />
-                    <View className="flex-row justify-end gap-2 mt-4">
-                        <Button
-                            onPress={() => setRenameModalVisible(false)}
-                            textColor="#6b7280"
-                        >
-                            취소
-                        </Button>
-                        <Button mode="contained" onPress={confirmRename}>
-                            확인
-                        </Button>
-                    </View>
-                </Modal>
-            </Portal>
 
             {/* OS 기본 시간 피커 — Android */}
             {timePickerVisible && Platform.OS === 'android' && (
