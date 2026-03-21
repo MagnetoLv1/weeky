@@ -14,6 +14,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
     Alert,
     Platform,
+    ScrollView,
     Text,
     TextInput,
     TouchableOpacity,
@@ -245,7 +246,8 @@ export default function SettingsScreen({ navigation, route }: Props) {
     if (!current || !draft) return null;
 
     return (
-        <View className="flex-1 bg-gray-50">
+        <View className="flex-1">
+        <ScrollView className="flex-1 bg-gray-50" contentInsetAdjustmentBehavior="automatic">
             {/* 시간표 정보 섹션 */}
             <List.Section>
                 <List.Subheader className="text-gray-500 text-xs uppercase tracking-[0.5px]">
@@ -424,53 +426,56 @@ export default function SettingsScreen({ navigation, route }: Props) {
                 </View>
             </List.Section>
 
-            {/* OS 기본 시간 피커 — Android */}
-            {timePickerVisible && Platform.OS === 'android' && (
-                <DateTimePicker
-                    mode="time"
-                    display="default"
-                    value={timeStringToDate(pendingTime)}
-                    onChange={handleTimeChange}
-                    minuteInterval={30}
-                />
-            )}
+        </ScrollView>
 
-            {/* OS 기본 시간 피커 — iOS sheet */}
-            {timePickerVisible && Platform.OS === 'ios' && (
-                <View
-                    className="absolute inset-0 justify-end"
-                    style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}
-                >
-                    <View className="bg-white rounded-tl-2xl rounded-tr-2xl pb-5">
-                        <View className="flex-row items-center justify-between px-5 pt-4 pb-2">
-                            <TouchableOpacity onPress={cancelTimePicker}>
-                                <Text className="text-[17px] text-[#8E8E93]">
-                                    취소
-                                </Text>
-                            </TouchableOpacity>
-                            <Text className="text-[17px] font-semibold text-[#1C1C1E]">
-                                {editingTimeField === 'start'
-                                    ? '시작 시간'
-                                    : '종료 시간'}
+        {/* OS 기본 시간 피커 — iOS sheet (ScrollView 바깥에 absolute 오버레이) */}
+        {timePickerVisible && Platform.OS === 'ios' && (
+            <View
+                className="absolute inset-0 justify-end"
+                style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}
+                pointerEvents="box-none"
+            >
+                <View className="bg-white rounded-tl-2xl rounded-tr-2xl pb-5">
+                    <View className="flex-row items-center justify-between px-5 pt-4 pb-2">
+                        <TouchableOpacity onPress={cancelTimePicker}>
+                            <Text className="text-[17px] text-[#8E8E93]">
+                                취소
                             </Text>
-                            <TouchableOpacity onPress={confirmTimePicker}>
-                                <Text className="text-[17px] font-semibold text-blue-500">
-                                    확인
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-                        <DateTimePicker
-                            mode="time"
-                            display="spinner"
-                            value={timeStringToDate(pendingTime)}
-                            onChange={handleTimeChange}
-                            minuteInterval={30}
-                            locale="ko_KR"
-                            style={{ width: '100%' }}
-                        />
+                        </TouchableOpacity>
+                        <Text className="text-[17px] font-semibold text-[#1C1C1E]">
+                            {editingTimeField === 'start'
+                                ? '시작 시간'
+                                : '종료 시간'}
+                        </Text>
+                        <TouchableOpacity onPress={confirmTimePicker}>
+                            <Text className="text-[17px] font-semibold text-blue-500">
+                                확인
+                            </Text>
+                        </TouchableOpacity>
                     </View>
+                    <DateTimePicker
+                        mode="time"
+                        display="spinner"
+                        value={timeStringToDate(pendingTime)}
+                        onChange={handleTimeChange}
+                        minuteInterval={30}
+                        locale="ko_KR"
+                        style={{ width: '100%' }}
+                    />
                 </View>
-            )}
+            </View>
+        )}
+
+        {/* OS 기본 시간 피커 — Android */}
+        {timePickerVisible && Platform.OS === 'android' && (
+            <DateTimePicker
+                mode="time"
+                display="default"
+                value={timeStringToDate(pendingTime)}
+                onChange={handleTimeChange}
+                minuteInterval={30}
+            />
+        )}
         </View>
     );
 }
