@@ -24,6 +24,8 @@
 | 알림         | @notifee/react-native                       |
 | 캡처/공유    | react-native-view-shot + react-native-share |
 | 프린트       | react-native-print                          |
+| 트래킹       | react-native-appsflyer                      |
+| 시각효과     | @callstack/liquid-glass (iOS 18+ 전용)      |
 | 백엔드       | 없음 (로컬 저장)                            |
 | Bundle ID    | com.flynn.weeky                             |
 
@@ -47,6 +49,8 @@
 - [x] 멀티 시간표
 - [x] 화면 줌 기능
 - [x] 공휴일 연동
+- [x] AppsFlyer SDK 연동 (앱 실행 이벤트 트래킹)
+- [x] Liquid Glass 아이콘 버튼 (iOS 18+, 헤더 Plus/Ellipsis 버튼)
 
 ---
 

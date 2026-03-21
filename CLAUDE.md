@@ -35,6 +35,19 @@
 - 타입 정의: `src/types/index.ts`
 - 유틸리티: `src/utils/`
 
+## 도메인 용어 정의
+
+### 헤더버튼
+MainScreen 상단 헤더 영역에 위치한 UI 요소 모음을 말한다.
+
+- **시간표 메뉴**: 헤더 왼쪽의 시간표 이름 + 화살표(ChevronDown) — 탭 시 시간표 선택 BottomSheet 열림
+- **추가하기 버튼**: 헤더 오른쪽 Plus 아이콘 버튼 — 탭 시 새 시간표 생성
+- **더보기 버튼**: 헤더 오른쪽 Ellipsis 아이콘 버튼 — 탭 시 ContextMenu(수정/삭제 등) 표시
+
+추가하기 버튼과 더보기 버튼은 `GlassButtonPill` 컴포넌트(`src/components/timetable/GlassIconButton.tsx`) 안에 함께 묶여 하나의 pill 형태로 표시된다.
+
+---
+
 ## 현재 구현 상태 (spec.md 기준)
 
 구현 완료 여부는 `spec/spec.md`의 체크리스트를 기준으로 한다.
