@@ -10,7 +10,7 @@ import type { RouteProp } from '@react-navigation/native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Check } from 'lucide-react-native';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     Alert,
     Platform,
@@ -59,6 +59,11 @@ export default function SettingsScreen({ navigation, route }: Props) {
     // 완료 버튼을 눌러야만 store에 반영, 뒤로가기 시 draft는 자동으로 폐기됨
     const [original, setOriginal] = useState<DraftSettings | null>(null);
     const [draft, setDraft] = useState<DraftSettings | null>(null);
+    // 최신 draft를 ref로 유지 → handleSave의 stale closure 방지
+    const draftRef = useRef(draft);
+    useEffect(() => {
+        draftRef.current = draft;
+    }, [draft]);
 
     // 시간 피커
     const [timePickerVisible, setTimePickerVisible] = useState(false);
@@ -133,22 +138,23 @@ export default function SettingsScreen({ navigation, route }: Props) {
         setTimetables(updated);
     }
 
-    // 완료 버튼 핸들러: draft를 store에 저장하고 뒤로 이동
+    // 완료 버튼 핸들러: draftRef.current를 사용해 항상 최신 draft를 참조
     function handleSave() {
-        if (!draft) return;
-        const trimmed = draft.name.trim();
+        const d = draftRef.current;
+        if (!d) return;
+        const trimmed = d.name.trim();
         if (!trimmed) {
             Alert.alert('알림', '시간표 이름을 입력해 주세요.');
             return;
         }
         updateCurrent({
             name: trimmed,
-            timeRangeStart: draft.timeRangeStart,
-            timeRangeEnd: draft.timeRangeEnd,
-            showWeekends: draft.showWeekends,
-            holidaySync: draft.holidaySync,
+            timeRangeStart: d.timeRangeStart,
+            timeRangeEnd: d.timeRangeEnd,
+            showWeekends: d.showWeekends,
+            holidaySync: d.holidaySync,
         });
-        setOriginal({ ...draft, name: trimmed }); // dirty 해제
+        setOriginal({ ...d, name: trimmed }); // dirty 해제
         navigation.goBack();
     }
 

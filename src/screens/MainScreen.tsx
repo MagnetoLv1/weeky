@@ -684,17 +684,21 @@ export default function MainScreen({ navigation, route }: Props) {
                         className="px-4 pb-0"
                         style={{ paddingTop: topInset }}
                     >
-                        <View className="flex-row items-start justify-between min-h-10">
-                            {/* 타이틀 영역 — GlassView: 탭 시 scale+shimmer 효과 */}
-                            <View>
+                        <View className="flex-row items-center justify-between min-h-10">
+                            {/* 타이틀 영역 — flex-1 min-w-0으로 오른쪽 버튼 영역 보호 */}
+                            <View className="flex-1 min-w-0 mr-2">
                                 <TouchableOpacity
                                     activeOpacity={1}
                                     onPress={() =>
                                         bottomSheetRef.current?.present()
                                     }
                                 >
-                                    <GlassView className="rounded-full flex-row items-center px-4 gap-1 h-11">
-                                        <Text className="text-lg font-bold text-[#111827]">
+                                    <GlassView className="rounded-full flex-row items-center px-4 gap-1 h-11 self-start max-w-full">
+                                        {/* numberOfLines=1 + flex-shrink로 말줄임 처리 */}
+                                        <Text
+                                            numberOfLines={1}
+                                            className="text-lg font-bold text-[#111827] flex-shrink"
+                                        >
                                             {activeTimetable?.name ?? '시간표'}
                                         </Text>
                                         <ChevronDown
@@ -793,12 +797,15 @@ export default function MainScreen({ navigation, route }: Props) {
                                                         holidayDates.has(
                                                             getWeekDate(i),
                                                         );
+                                                    // 일요일(i=6)은 파랑 대신 빨강 계열 색상 사용
                                                     return (
                                                         <View
                                                             className={cn(
                                                                 'w-8 h-8 items-center justify-center',
                                                                 isHoliday
                                                                     ? 'rounded bg-red-100'
+                                                                    : isToday && i === 6
+                                                                    ? 'rounded-full bg-red-500'
                                                                     : isToday
                                                                     ? 'rounded-full bg-blue-500'
                                                                     : '',
@@ -811,11 +818,9 @@ export default function MainScreen({ navigation, route }: Props) {
                                                                         ? 'text-red-500'
                                                                         : isToday
                                                                         ? 'text-white'
-                                                                        : i ===
-                                                                          5
+                                                                        : i === 5
                                                                         ? 'text-blue-500'
-                                                                        : i ===
-                                                                          6
+                                                                        : i === 6
                                                                         ? 'text-red-500'
                                                                         : 'text-[#374151]',
                                                                 )}
