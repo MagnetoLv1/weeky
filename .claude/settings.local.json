@@ -16,7 +16,14 @@
       "Bash(cd /Users/kwangcheolkim/my/weeky/ios && pod install 2>&1 | tail -5)",
       "Bash(cd /Users/kwangcheolkim/my/weeky/ios && pod install)",
       "Bash(npm view:*)",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "Bash(aws logs:*)",
+      "Bash(aws s3:*)",
+      "Bash(aws lambda:*)",
+      "Read(//tmp/**)",
+      "WebSearch",
+      "Bash(wc:*)",
+      "Bash(find /Users/kwangcheolkim/my/weeky/node_modules/@callstack/liquid-glass -type f \\\\\\(-name *example* -o -name *demo* \\\\\\))"
     ]
   }
 }
