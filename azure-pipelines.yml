@@ -5,7 +5,7 @@
 trigger:
   branches:
     include:
-      - deploy/prod
+      - deploy/ios  # iOS 전용 배포 브랜치
 
 pr: none  # PR에서는 실행하지 않음
 
