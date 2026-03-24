@@ -64,12 +64,18 @@ steps:
     keychain: 'temp'
     deleteCert: true
 
-# ─── 5. 프로비저닝 프로파일 설치 (Azure Secure Files에 .mobileprovision 업로드 필요) ──
-- task: InstallProvisioningProfile@1
-  displayName: '프로비저닝 프로파일 설치'
+# ─── 5. 프로비저닝 프로파일 설치 (Secure Files → 시스템 경로에 복사) ──────
+- task: DownloadSecureFile@1
+  name: provisioningProfile
+  displayName: '프로비저닝 프로파일 다운로드'
   inputs:
-    provProfileSecureFile: '$(APPLE_PROVISIONING_PROFILE_SECURE_FILE)'  # Secure Files에 등록한 파일명
-    removeProfile: true
+    secureFile: '$(APPLE_PROVISIONING_PROFILE_SECURE_FILE)'
+
+- script: |
+    mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+    cp "$(provisioningProfile.secureFilePath)" \
+       ~/Library/MobileDevice/Provisioning\ Profiles/weeky.mobileprovision
+  displayName: '프로비저닝 프로파일 설치'
 
 # ─── 6. ExportOptions.plist 생성 ──────────────────────────────────────────
 - script: |
