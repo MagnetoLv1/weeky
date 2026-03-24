@@ -1,20 +1,179 @@
-# Xcode
-# Build, test, and archive an Xcode workspace on macOS.
-# Add steps that install certificates, test, sign, and distribute an app, save build artifacts, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/languages/xcode
+# Weeky iOS CI/CD Pipeline
+# deploy/prod 브랜치 푸시 시 자동 실행
+# 빌드 → 서명 → Firebase App Distribution → TestFlight 순서로 배포
 
 trigger:
-- main
+  branches:
+    include:
+      - deploy/prod
+
+pr: none  # PR에서는 실행하지 않음
 
 pool:
   vmImage: 'macos-latest'
 
+variables:
+  - group: weeky-ios-secrets  # Azure DevOps Library → Variable Groups에 등록한 그룹명
+  - name: SCHEME
+    value: 'Weeky'
+  - name: WORKSPACE
+    value: 'ios/Weeky.xcworkspace'
+  - name: CONFIGURATION
+    value: 'Release'
+  - name: SDK
+    value: 'iphoneos'
+  - name: ARCHIVE_PATH
+    value: '$(Build.ArtifactStagingDirectory)/Weeky.xcarchive'
+  - name: IPA_PATH
+    value: '$(Build.ArtifactStagingDirectory)/ipa'
+  - name: EXPORT_OPTIONS_PLIST
+    value: '$(Build.ArtifactStagingDirectory)/ExportOptions.plist'
+
 steps:
-- task: Xcode@5
+
+# ─── 1. Node.js & npm 의존성 설치 ──────────────────────────────────────────
+- task: NodeTool@0
+  displayName: 'Node.js 설치'
   inputs:
-    actions: 'build'
-    scheme: ''
-    sdk: 'iphoneos'
-    configuration: 'Release'
-    xcWorkspacePath: '**/*.xcodeproj/project.xcworkspace'
-    xcodeVersion: 'default' # Options: 11, 12, 13, 14, 15, default, specifyPath
+    versionSpec: '20.x'
+
+- script: npm ci
+  displayName: 'npm 의존성 설치'
+
+# ─── 2. CocoaPods 의존성 설치 ──────────────────────────────────────────────
+- script: |
+    cd ios
+    pod install --repo-update
+  displayName: 'CocoaPods 설치'
+  env:
+    LANG: en_US.UTF-8
+
+# ─── 3. 빌드 번호 설정 (Azure Build ID 사용) ──────────────────────────────
+- script: |
+    BUILD_NUMBER=$(Build.BuildId)
+    echo "빌드 번호: $BUILD_NUMBER"
+    /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" ios/Weeky/Info.plist
+  displayName: '빌드 번호 주입'
+
+# ─── 4. 서명 인증서 설치 (Azure Secure Files에 p12 업로드 필요) ────────────
+- task: InstallAppleCertificate@2
+  displayName: '코드 서명 인증서 설치'
+  inputs:
+    certSecureFile: '$(APPLE_CERTIFICATE_SECURE_FILE)'   # Secure Files에 등록한 .p12 파일명
+    certPwd: '$(APPLE_CERTIFICATE_PASSWORD)'              # Variable Group 비밀 변수
+    keychain: 'temp'
+    deleteCert: true
+
+# ─── 5. 프로비저닝 프로파일 설치 (Azure Secure Files에 .mobileprovision 업로드 필요) ──
+- task: InstallProvisioningProfile@1
+  displayName: '프로비저닝 프로파일 설치'
+  inputs:
+    provProfileSecureFile: '$(APPLE_PROVISIONING_PROFILE_SECURE_FILE)'  # Secure Files에 등록한 파일명
+    removeProfile: true
+
+# ─── 6. ExportOptions.plist 생성 ──────────────────────────────────────────
+- script: |
+    cat > "$(EXPORT_OPTIONS_PLIST)" <<EOF
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    <plist version="1.0">
+    <dict>
+      <key>method</key>
+      <string>app-store</string>
+      <key>teamID</key>
+      <string>$(APPLE_TEAM_ID)</string>
+      <key>uploadBitcode</key>
+      <false/>
+      <key>uploadSymbols</key>
+      <true/>
+      <key>compileBitcode</key>
+      <false/>
+    </dict>
+    </plist>
+    EOF
+  displayName: 'ExportOptions.plist 생성'
+
+# ─── 7. Xcode Archive (빌드 + 아카이브) ───────────────────────────────────
+- task: Xcode@5
+  displayName: 'Xcode 아카이브'
+  inputs:
+    actions: 'archive'
+    scheme: '$(SCHEME)'
+    sdk: '$(SDK)'
+    configuration: '$(CONFIGURATION)'
+    xcWorkspacePath: '$(WORKSPACE)'
+    xcodeVersion: 'default'
+    packageApp: false
+    archivePath: '$(ARCHIVE_PATH)'
+    signingOption: 'manual'
+    signingIdentity: '$(APPLE_SIGNING_IDENTITY)'      # 예: "Apple Distribution: ..."
+    provisioningProfileUuid: '$(APPLE_PROVISIONING_PROFILE_UUID)'
+
+# ─── 8. IPA 내보내기 ───────────────────────────────────────────────────────
+- script: |
+    xcodebuild -exportArchive \
+      -archivePath "$(ARCHIVE_PATH)" \
+      -exportPath "$(IPA_PATH)" \
+      -exportOptionsPlist "$(EXPORT_OPTIONS_PLIST)" \
+      -allowProvisioningUpdates
+    echo "IPA 내보내기 완료: $(IPA_PATH)"
+    ls -lh "$(IPA_PATH)"
+  displayName: 'IPA 내보내기'
+
+# ─── 9. Firebase App Distribution 배포 ────────────────────────────────────
+- script: |
+    # Firebase CLI 설치
+    npm install -g firebase-tools
+
+    IPA_FILE=$(find "$(IPA_PATH)" -name "*.ipa" | head -1)
+    echo "Firebase 배포 IPA: $IPA_FILE"
+
+    firebase appdistribution:distribute "$IPA_FILE" \
+      --app "$(FIREBASE_IOS_APP_ID)" \
+      --token "$(FIREBASE_TOKEN)" \
+      --groups "$(FIREBASE_TESTER_GROUPS)" \
+      --release-notes "Build $(Build.BuildId) - $(Build.SourceVersionMessage)"
+  displayName: 'Firebase App Distribution 배포'
+  env:
+    FIREBASE_TOKEN: $(FIREBASE_TOKEN)
+
+# ─── 10. TestFlight 업로드 (App Store Connect API 키 방식) ─────────────────
+- script: |
+    # App Store Connect API 키 파일 생성
+    mkdir -p ~/.appstoreconnect/private_keys
+    echo "$(APP_STORE_CONNECT_API_KEY_CONTENT)" > ~/.appstoreconnect/private_keys/AuthKey_$(APP_STORE_CONNECT_KEY_ID).p8
+
+    IPA_FILE=$(find "$(IPA_PATH)" -name "*.ipa" | head -1)
+    echo "TestFlight 업로드 IPA: $IPA_FILE"
+
+    xcrun altool --upload-app \
+      --type ios \
+      --file "$IPA_FILE" \
+      --apiKey "$(APP_STORE_CONNECT_KEY_ID)" \
+      --apiIssuer "$(APP_STORE_CONNECT_ISSUER_ID)" \
+      --verbose
+
+    # 키 파일 삭제 (보안)
+    rm -f ~/.appstoreconnect/private_keys/AuthKey_$(APP_STORE_CONNECT_KEY_ID).p8
+  displayName: 'TestFlight 업로드'
+  env:
+    APP_STORE_CONNECT_API_KEY_CONTENT: $(APP_STORE_CONNECT_API_KEY_CONTENT)
+    APP_STORE_CONNECT_KEY_ID: $(APP_STORE_CONNECT_KEY_ID)
+    APP_STORE_CONNECT_ISSUER_ID: $(APP_STORE_CONNECT_ISSUER_ID)
+
+# ─── 11. 아티팩트 저장 (IPA, dSYM) ────────────────────────────────────────
+- task: PublishBuildArtifacts@1
+  displayName: 'IPA 아티팩트 저장'
+  inputs:
+    pathToPublish: '$(IPA_PATH)'
+    artifactName: 'ios-ipa'
+    publishLocation: 'Container'
+  condition: always()
+
+- task: PublishBuildArtifacts@1
+  displayName: 'dSYM 아티팩트 저장'
+  inputs:
+    pathToPublish: '$(ARCHIVE_PATH)/dSYMs'
+    artifactName: 'ios-dsyms'
+    publishLocation: 'Container'
+  condition: always()

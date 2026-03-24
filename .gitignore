@@ -5,6 +5,7 @@
 # Xcode
 #
 build/
+*.xcworkspace/xcshareddata/
 *.pbxuser
 !default.pbxuser
 *.mode1v3
