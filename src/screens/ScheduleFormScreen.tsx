@@ -447,14 +447,8 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
                                 색상
                             </Text>
                             <View
-                                style={{
-                                    backgroundColor: color,
-                                    width: 20,
-                                    height: 20,
-                                    borderRadius: 10,
-                                    borderWidth: 0.5,
-                                    borderColor: 'rgba(0,0,0,0.08)',
-                                }}
+                                className="w-5 h-5 rounded-full border-[0.5px] border-black/[0.08]"
+                                style={{ backgroundColor: color }}
                             />
                         </View>
                         <View
@@ -478,21 +472,12 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
                                 <TouchableOpacity
                                     key={c}
                                     onPress={() => setColor(c)}
-                                    style={[
-                                        {
-                                            width: 36,
-                                            height: 36,
-                                            borderRadius: 18,
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            backgroundColor: c,
-                                            borderWidth: color === c ? 3 : 0.5,
-                                            borderColor:
-                                                color === c
-                                                    ? '#3B82F6'
-                                                    : 'rgba(0,0,0,0.08)',
-                                        },
-                                    ]}
+                                    className="w-9 h-9 rounded-full items-center justify-center"
+                                    style={{
+                                        backgroundColor: c,
+                                        borderWidth: color === c ? 3 : 0.5,
+                                        borderColor: color === c ? '#3B82F6' : 'rgba(0,0,0,0.08)',
+                                    }}
                                 >
                                     {color === c && (
                                         <Check size={14} color="#1f2937" />
@@ -637,10 +622,7 @@ export default function ScheduleFormScreen({ navigation, route }: Props) {
                 />
             )}
             {timePickerVisible && Platform.OS === 'ios' && (
-                <View
-                    className="absolute inset-0 justify-end"
-                    style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}
-                >
+                <View className="absolute inset-0 justify-end bg-black/40">
                     <View className="bg-white rounded-tl-2xl rounded-tr-2xl pb-5">
                         <View className="flex-row items-center justify-between px-5 pt-4 pb-2">
                             <TouchableOpacity onPress={cancelTimePicker}>
