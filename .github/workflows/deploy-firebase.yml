@@ -1,13 +1,13 @@
-name: Build Android AAB for Play Store
+name: Deploy Android to Firebase App Distribution
 
 on:
   push:
     branches:
-      - deploy/android  # Android 전용 배포 브랜치
+      - deploy/android-firebase  # Firebase 테스터 배포 전용 브랜치
 
 jobs:
   build-android:
-    name: Build Android AAB
+    name: Build & Deploy Android APK to Firebase
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
@@ -31,23 +31,19 @@ jobs:
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/weeky-release.keystore
 
-      # Google Play Store 배포용 AAB(Android App Bundle) 빌드
-      - name: Build Release AAB
+      - name: Build Release APK
         working-directory: android
         env:
           ANDROID_KEYSTORE_FILE: weeky-release.keystore
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ./gradlew bundleRelease
+        run: ./gradlew assembleRelease
 
-      # AAB 파일을 GitHub Actions artifact로 저장 (Play Console에서 수동 업로드)
-      - name: Upload AAB artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload to Firebase App Distribution
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
         with:
-          name: weeky-release-aab
-          path: android/app/build/outputs/bundle/release/app-release.aab
-          retention-days: 30
-
-  # iOS 빌드는 Azure Pipelines에서 처리 (deploy/ios 브랜치 트리거)
-  # azure-pipelines.yml 참고
+          appId: ${{ secrets.FIREBASE_ANDROID_APP_ID }}
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          groups: testers
+          file: android/app/build/outputs/apk/release/app-release.apk
