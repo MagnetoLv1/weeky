@@ -10,6 +10,7 @@ import {
     formatTimeLabel,
 } from './constants';
 import { timeToMinutes } from '@/utils/time';
+import { cn } from '@/utils/cn';
 
 // A4 비율(210:297)에 맞게 이미지 높이 계산
 const A4_RATIO = 297 / 210;
@@ -33,74 +34,43 @@ export function TimetableShareView({ timetable }: { timetable: Timetable }) {
 
     return (
         <View
-            style={{
-                width: SCREEN_WIDTH,
-                backgroundColor: 'white',
-                paddingBottom: 16,
-            }}
+            className="bg-white pb-4"
+            style={{ width: SCREEN_WIDTH }}
         >
-            <Text
-                style={{
-                    textAlign: 'center',
-                    fontSize: 16,
-                    fontWeight: 'bold',
-                    paddingVertical: 12,
-                    color: '#111827',
-                }}
-            >
+            <Text className="text-center text-base font-bold py-3 text-[#111827]">
                 {timetable.name}
             </Text>
-            <View
-                style={{
-                    flexDirection: 'row',
-                    borderBottomWidth: 1,
-                    borderColor: '#e5e7eb',
-                    backgroundColor: '#f9fafb',
-                    paddingVertical: 6,
-                }}
-            >
+            <View className="flex-row border-b border-[#e5e7eb] bg-[#f9fafb] py-1.5">
                 <View style={{ width: TIME_COL_WIDTH }} />
                 {days.map((day, i) => (
                     <View
                         key={day}
-                        style={{ width: colW, alignItems: 'center' }}
+                        className="items-center"
+                        style={{ width: colW }}
                     >
                         <Text
-                            style={{
-                                fontSize: 13,
-                                fontWeight: '600',
-                                color:
-                                    i === 5
-                                        ? '#3b82f6'
-                                        : i === 6
-                                        ? '#ef4444'
-                                        : '#374151',
-                            }}
+                            className={cn(
+                                'text-[13px] font-semibold',
+                                i === 5 ? 'text-blue-500' : i === 6 ? 'text-red-500' : 'text-[#374151]',
+                            )}
                         >
                             {day}
                         </Text>
                     </View>
                 ))}
             </View>
-            <View style={{ flexDirection: 'row', height: gridHeight }}>
-                <View style={{ width: TIME_COL_WIDTH, position: 'relative' }}>
+            <View className="flex-row" style={{ height: gridHeight }}>
+                <View className="relative" style={{ width: TIME_COL_WIDTH }}>
                     {labels.map((label, i) => {
                         const { ampm, hour } = formatTimeLabel(label);
                         return (
                             <Text
                                 key={label}
-                                style={{
-                                    position: 'absolute',
-                                    right: 8,
-                                    top: i * 60 * cellH - 6,
-                                    fontSize: 10,
-                                    color: '#9ca3af',
-                                }}
+                                className="absolute right-2 text-[10px] text-[#9ca3af]"
+                                style={{ top: i * 60 * cellH - 6 }}
                             >
                                 {ampm}{' '}
-                                <Text
-                                    style={{ fontSize: 14, fontWeight: '500' }}
-                                >
+                                <Text className="text-sm font-medium">
                                     {hour}
                                 </Text>
                                 시
@@ -111,25 +81,14 @@ export function TimetableShareView({ timetable }: { timetable: Timetable }) {
                 {days.map((day, dayIndex) => (
                     <View
                         key={day}
-                        style={{
-                            width: colW,
-                            height: gridHeight,
-                            position: 'relative',
-                            borderLeftWidth: 1,
-                            borderColor: '#f3f4f6',
-                        }}
+                        className="relative border-l border-[#f3f4f6]"
+                        style={{ width: colW, height: gridHeight }}
                     >
                         {labels.map((label, i) => (
                             <View
                                 key={label}
-                                style={{
-                                    position: 'absolute',
-                                    left: 0,
-                                    right: 0,
-                                    top: i * 60 * cellH,
-                                    borderTopWidth: 1,
-                                    borderColor: '#f3f4f6',
-                                }}
+                                className="absolute left-0 right-0 border-t border-[#f3f4f6]"
+                                style={{ top: i * 60 * cellH }}
                             />
                         ))}
                         {timetable.schedules
@@ -148,35 +107,23 @@ export function TimetableShareView({ timetable }: { timetable: Timetable }) {
                                 return (
                                     <View
                                         key={schedule.id}
+                                        className="absolute left-px right-px rounded overflow-hidden p-0.5"
                                         style={{
-                                            position: 'absolute',
                                             top,
                                             height,
-                                            left: 1,
-                                            right: 1,
                                             backgroundColor: schedule.color,
-                                            borderRadius: 4,
-                                            overflow: 'hidden',
-                                            padding: 2,
                                         }}
                                     >
                                         <Text
                                             numberOfLines={1}
-                                            style={{
-                                                fontSize: 10,
-                                                fontWeight: 'bold',
-                                                color: '#1f2937',
-                                            }}
+                                            className="text-[10px] font-bold text-[#1f2937]"
                                         >
                                             {schedule.title}
                                         </Text>
                                         {schedule.subTitle && (
                                             <Text
                                                 numberOfLines={1}
-                                                style={{
-                                                    fontSize: 8,
-                                                    color: '#4b5563',
-                                                }}
+                                                className="text-[8px] text-[#4b5563]"
                                             >
                                                 {schedule.subTitle}
                                             </Text>
