@@ -422,7 +422,7 @@ export default function MainScreen({ navigation, route }: Props) {
     }
 
     return (
-        <View className="flex-1 bg-white" style={{ overflow: 'hidden' }}>
+        <View className="flex-1 bg-white overflow-hidden">
             <View className="flex-1">
                 {/* 시간표 그리드 — contentContainerStyle로 헤더 높이만큼 아래서 시작 */}
                 <Animated.ScrollView
@@ -439,7 +439,7 @@ export default function MainScreen({ navigation, route }: Props) {
                         paddingTop: topInset + HEADER_CONTENT_HEIGHT,
                     }}
                 >
-                    <View style={{ flexDirection: 'row' }} className="relative">
+                    <View className="flex-row relative">
                         {/* 시간 라벨 — 핀치/팬 무관하게 고정 */}
                         <View className="relative w-[58px]">
                             {/* 현재 시각 배지 — 시간 라벨 우측에 표시 */}
@@ -499,7 +499,7 @@ export default function MainScreen({ navigation, route }: Props) {
                         </View>
 
                         {/* 요일 컬럼 영역 — 핀치/팬 제스처 적용 */}
-                        <View style={{ flex: 1, overflow: 'hidden' }}>
+                        <View className="flex-1 overflow-hidden">
                             {/* 현재 시간선 — translateX와 함께 이동 */}
                             {showNowIndicator &&
                                 nowMin >= startMin &&
@@ -778,7 +778,7 @@ export default function MainScreen({ navigation, route }: Props) {
                     {/* 요일 헤더 — 바디 컬럼과 동일한 translateX 적용 */}
                     <View className="flex-row border-b border-[#e5e7eb] pb-2">
                         <View className="w-[58px]" />
-                        <View style={{ flex: 1, overflow: 'hidden' }}>
+                        <View className="flex-1 overflow-hidden">
                             <Animated.View style={columnsContainerStyle}>
                                 {ALL_DAYS.map((day, i) => {
                                     const headerVisible = i < numDays;
