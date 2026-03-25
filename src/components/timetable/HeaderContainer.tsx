@@ -2,17 +2,16 @@
 import React from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import { BlurView } from '@react-native-community/blur';
+import { cssInterop } from 'nativewind';
+import { cn } from '@/utils/cn';
 
-// 헤더 공통 스타일 (absolute 위치, 상단 고정, z-index 10)
-const style = {
-    position: 'absolute' as const,
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
-};
+// BlurView는 기본적으로 className을 지원하지 않으므로 cssInterop으로 등록
+cssInterop(BlurView, { className: 'style' });
+
+const BASE_CLASS = 'absolute top-0 left-0 right-0 z-[10] border-b border-black/10';
+
+// borderBottomWidth은 StyleSheet.hairlineWidth(0.5px 이하)로 hairline 두께를 보장해야 하므로 style에 유지
+const hairlineStyle = { borderBottomWidth: StyleSheet.hairlineWidth };
 
 // Platform.OS는 런타임에 변경되지 않으므로 prop 대신 내부에서 직접 판단
 export function HeaderContainer({
@@ -27,8 +26,8 @@ export function HeaderContainer({
             <BlurView
                 blurType="prominent"
                 blurAmount={20}
-                style={style}
-                className={className}
+                style={hairlineStyle}
+                className={cn(BASE_CLASS, className)}
             >
                 {children}
             </BlurView>
@@ -36,8 +35,8 @@ export function HeaderContainer({
     }
     return (
         <View
-            style={[style, { backgroundColor: 'rgba(255,255,255,0.95)' }]}
-            className={className}
+            style={hairlineStyle}
+            className={cn(BASE_CLASS, 'bg-white/[0.95]', className)}
         >
             {children}
         </View>
