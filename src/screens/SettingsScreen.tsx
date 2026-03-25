@@ -270,13 +270,7 @@ export default function SettingsScreen({ navigation, route }: Props) {
                                 placeholder="시간표 이름을 입력하세요"
                                 placeholderTextColor="#9ca3af"
                                 returnKeyType="done"
-                                style={{
-                                    flex: 1,
-                                    fontSize: 16,
-                                    color: '#1C1C1E',
-                                    padding: 0,
-                                    height: 40,
-                                }}
+                                className="flex-1 text-base text-[#1C1C1E] p-0 h-10"
                             />
                             {/* 입력 내용 지우기 */}
                             {draft.name.length > 0 && (
@@ -437,8 +431,7 @@ export default function SettingsScreen({ navigation, route }: Props) {
         {/* OS 기본 시간 피커 — iOS sheet (ScrollView 바깥에 absolute 오버레이) */}
         {timePickerVisible && Platform.OS === 'ios' && (
             <View
-                className="absolute inset-0 justify-end"
-                style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}
+                className="absolute inset-0 justify-end bg-black/40"
                 pointerEvents="box-none"
             >
                 <View className="bg-white rounded-tl-2xl rounded-tr-2xl pb-5">
