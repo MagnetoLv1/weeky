@@ -15,16 +15,30 @@ const style = {
 };
 
 // Platform.OS는 런타임에 변경되지 않으므로 prop 대신 내부에서 직접 판단
-export function HeaderContainer({ children }: { children: React.ReactNode }) {
+export function HeaderContainer({
+    children,
+    className,
+}: {
+    children: React.ReactNode;
+    className?: string;
+}) {
     if (Platform.OS === 'ios') {
         return (
-            <BlurView blurType="prominent" blurAmount={20} style={style}>
+            <BlurView
+                blurType="prominent"
+                blurAmount={20}
+                style={style}
+                className={className}
+            >
                 {children}
             </BlurView>
         );
     }
     return (
-        <View style={[style, { backgroundColor: 'rgba(255,255,255,0.95)' }]}>
+        <View
+            style={[style, { backgroundColor: 'rgba(255,255,255,0.95)' }]}
+            className={className}
+        >
             {children}
         </View>
     );

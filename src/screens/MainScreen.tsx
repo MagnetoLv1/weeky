@@ -454,7 +454,7 @@ export default function MainScreen({ navigation, route }: Props) {
                                                 (nowMin - startMin) *
                                                     MIN_CELL_HEIGHT -
                                                 6,
-                                            right: 4,
+                                            right: 0,
                                             zIndex: 11,
                                         }}
                                     >
@@ -679,7 +679,7 @@ export default function MainScreen({ navigation, route }: Props) {
                 </Animated.ScrollView>
 
                 {/* 앱 헤더 — ScrollView와 같은 surface에서 absolute로 위에 올려야 blur가 동작 */}
-                <HeaderContainer>
+                <HeaderContainer className="flex flex-col gap-1">
                     <View
                         className="px-4 pb-0"
                         style={{ paddingTop: topInset }}
@@ -776,7 +776,7 @@ export default function MainScreen({ navigation, route }: Props) {
                     </View>
 
                     {/* 요일 헤더 — 바디 컬럼과 동일한 translateX 적용 */}
-                    <View className="flex-row border-b border-[#e5e7eb] h-11">
+                    <View className="flex-row border-b border-[#e5e7eb] pb-2">
                         <View className="w-[58px]" />
                         <View style={{ flex: 1, overflow: 'hidden' }}>
                             <Animated.View style={columnsContainerStyle}>
@@ -804,7 +804,8 @@ export default function MainScreen({ navigation, route }: Props) {
                                                                 'w-8 h-8 items-center justify-center',
                                                                 isHoliday
                                                                     ? 'rounded bg-red-100'
-                                                                    : isToday && i === 6
+                                                                    : isToday &&
+                                                                      i === 6
                                                                     ? 'rounded-full bg-red-500'
                                                                     : isToday
                                                                     ? 'rounded-full bg-blue-500'
@@ -818,9 +819,11 @@ export default function MainScreen({ navigation, route }: Props) {
                                                                         ? 'text-red-500'
                                                                         : isToday
                                                                         ? 'text-white'
-                                                                        : i === 5
+                                                                        : i ===
+                                                                          5
                                                                         ? 'text-blue-500'
-                                                                        : i === 6
+                                                                        : i ===
+                                                                          6
                                                                         ? 'text-red-500'
                                                                         : 'text-[#374151]',
                                                                 )}
